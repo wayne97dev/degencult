@@ -65,8 +65,8 @@ const App = () => {
   // ═══════════════════════════════════════════════════════════════
 
   // 🔗 Solana Connection (Mainnet)
-  const SOLANA_RPC = "https://api.mainnet-beta.solana.com";
-  // Per testare usa Devnet: "https://api.devnet.solana.com"
+  // Per RPC dedicato e più veloce, registrati gratis su helius.dev
+  const SOLANA_RPC = "https://rpc.ankr.com/solana";
   const connection = new Connection(SOLANA_RPC, 'confirmed');
 
   // Wallet State
