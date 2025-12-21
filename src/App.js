@@ -25,6 +25,8 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState('all');
   const [copied, setCopied] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeSection, setActiveSection] = useState('presets');
 
   // ═══════════════════════════════════════════════════════════════
   // ⚙️ CONFIGURAZIONE - MODIFICA QUI I TUOI LINK!
@@ -42,6 +44,16 @@ const App = () => {
   const [walletError, setWalletError] = useState('');
 
   const P = 5;
+
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Copy contract address
   const copyContract = () => {
@@ -68,7 +80,7 @@ const App = () => {
       const provider = getPhantomProvider();
       
       if (!provider) {
-        setWalletError('Phantom wallet not found! Please install it from phantom.app');
+        setWalletError('Phantom wallet not found! Install from phantom.app');
         setIsConnecting(false);
         return;
       }
@@ -81,9 +93,9 @@ const App = () => {
       localStorage.setItem('degenCultWallet', address);
     } catch (err) {
       if (err.code === 4001) {
-        setWalletError('Connection rejected by user');
+        setWalletError('Connection rejected');
       } else {
-        setWalletError('Failed to connect: ' + err.message);
+        setWalletError('Failed to connect');
       }
     }
     
@@ -362,6 +374,21 @@ const App = () => {
     { id: 'snow', name: '❄️ Snow' },
   ];
 
+  // Mobile sections for tabs
+  const sections = [
+    { id: 'presets', name: '🎭', data: presets, type: 'preset' },
+    { id: 'bg', name: '🎨', data: backgrounds, type: 'bg' },
+    { id: 'skin', name: '👤', data: skinColors, type: 'color', setter: setSkinColor, current: skinColor },
+    { id: 'hair', name: '💇', data: hairStyles, type: 'style', setter: setHairStyle, current: hairStyle },
+    { id: 'hairColor', name: '🎨', data: hairColors, type: 'color', setter: setHairColor, current: hairColor },
+    { id: 'eyes', name: '👀', data: eyeStyles, type: 'style', setter: setEyeStyle, current: eyeStyle },
+    { id: 'mouth', name: '👄', data: mouthStyles, type: 'style', setter: setMouthStyle, current: mouthStyle },
+    { id: 'acc', name: '🕶️', data: accessories, type: 'style', setter: setAccessory, current: accessory },
+    { id: 'hats', name: '🎩', data: hats, type: 'style', setter: setHat, current: hat },
+    { id: 'items', name: '🔫', data: items, type: 'style', setter: setItem, current: item },
+    { id: 'fx', name: '✨', data: effects, type: 'style', setter: setEffect, current: effect },
+  ];
+
   // Drawing helpers
   const px = (ctx, x, y, color) => {
     ctx.fillStyle = color;
@@ -572,7 +599,7 @@ const App = () => {
 
     if (isAlreadyMinted()) {
       playSound('error');
-      setMintError('⚠️ This combination already exists! Make it unique.');
+      setMintError('⚠️ This combination already exists!');
       return;
     }
 
@@ -597,7 +624,7 @@ const App = () => {
     saveNFTs(updatedNFTs);
     
     playSound('mint');
-    setMintSuccess(`🎉 NFT #${serialNumber} minted to ${shortAddress(walletAddress)}!`);
+    setMintSuccess(`🎉 NFT #${serialNumber} minted!`);
     setShowCard(false);
   };
 
@@ -628,27 +655,41 @@ const App = () => {
     ? mintedNFTs.filter(nft => nft.owner === walletAddress)
     : mintedNFTs;
 
-  const Section = ({ title, children }) => (
-    <div style={{ marginBottom: '12px' }}>
-      <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88', marginBottom: '6px' }}>{title}</div>
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>{children}</div>
-    </div>
-  );
-
-  const OptionBtn = ({ active, onClick, children }) => (
+  // UI Components
+  const OptionBtn = ({ active, onClick, children, small }) => (
     <button type="button" onClick={(e) => { e.preventDefault(); onClick(); playSound('select'); }}
-      style={{ padding: '6px 10px', background: active ? 'linear-gradient(135deg, #00ff88, #00aa55)' : 'rgba(255,255,255,0.1)', border: `2px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, borderRadius: '4px', color: active ? '#000' : '#fff', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}
+      style={{ 
+        padding: small ? '8px 12px' : (isMobile ? '12px 14px' : '6px 10px'), 
+        background: active ? 'linear-gradient(135deg, #00ff88, #00aa55)' : 'rgba(255,255,255,0.1)', 
+        border: `2px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
+        borderRadius: '6px', 
+        color: active ? '#000' : '#fff', 
+        fontSize: isMobile ? '12px' : '10px', 
+        fontWeight: '600', 
+        cursor: 'pointer',
+        minWidth: isMobile ? '70px' : 'auto',
+        touchAction: 'manipulation',
+      }}
     >{children}</button>
   );
 
   const ColorBtn = ({ active, onClick, color }) => (
     <button type="button" onClick={(e) => { e.preventDefault(); onClick(); playSound('select'); }}
-      style={{ width: '28px', height: '28px', background: color, border: `3px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, borderRadius: '4px', cursor: 'pointer', boxShadow: active ? '0 0 10px rgba(0,255,136,0.5)' : 'none' }}
+      style={{ 
+        width: isMobile ? '44px' : '28px', 
+        height: isMobile ? '44px' : '28px', 
+        background: color, 
+        border: `3px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
+        borderRadius: '6px', 
+        cursor: 'pointer', 
+        boxShadow: active ? '0 0 10px rgba(0,255,136,0.5)' : 'none',
+        touchAction: 'manipulation',
+      }}
     />
   );
 
   const RarityBadge = ({ rarity }) => (
-    <span style={{ padding: '3px 8px', background: rarities[rarity].color, borderRadius: '4px', fontSize: '9px', fontWeight: 'bold', color: '#fff' }}>{rarities[rarity].name}</span>
+    <span style={{ padding: '4px 10px', background: rarities[rarity].color, borderRadius: '4px', fontSize: isMobile ? '10px' : '9px', fontWeight: 'bold', color: '#fff' }}>{rarities[rarity].name}</span>
   );
 
   const TwitterIcon = () => (
@@ -664,41 +705,143 @@ const App = () => {
     </svg>
   );
 
+  // Mobile section renderer
+  const renderMobileSection = () => {
+    const section = sections.find(s => s.id === activeSection);
+    if (!section) return null;
+
+    if (section.type === 'preset') {
+      return (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {Object.entries(section.data).map(([k, v]) => (
+            <OptionBtn key={k} onClick={() => applyPreset(k)}>{v.name}</OptionBtn>
+          ))}
+        </div>
+      );
+    }
+
+    if (section.type === 'bg') {
+      return (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {Object.entries(section.data).map(([k, v]) => (
+            <OptionBtn key={k} active={bg === k} onClick={() => setBg(k)}>{v.name}</OptionBtn>
+          ))}
+        </div>
+      );
+    }
+
+    if (section.type === 'color') {
+      return (
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {section.data.map(c => (
+            <ColorBtn key={c.color} active={section.current === c.color} onClick={() => section.setter(c.color)} color={c.color} />
+          ))}
+        </div>
+      );
+    }
+
+    if (section.type === 'style') {
+      return (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {section.data.map(item => (
+            <OptionBtn key={item.id || 'none'} active={section.current === item.id} onClick={() => section.setter(item.id)}>{item.name}</OptionBtn>
+          ))}
+        </div>
+      );
+    }
+  };
+
+  // Desktop section component
+  const Section = ({ title, children }) => (
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88', marginBottom: '6px' }}>{title}</div>
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>{children}</div>
+    </div>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%)', fontFamily: 'system-ui', color: '#fff', padding: '15px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%)', fontFamily: 'system-ui', color: '#fff', padding: isMobile ? '10px' : '15px', paddingBottom: isMobile ? '20px' : '15px' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { overflow-x: hidden; }
         .title { font-family: 'Press Start 2P'; text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
         .float { animation: float 3s ease-in-out infinite; }
-        .panel { background: rgba(0,255,136,0.03); border: 2px solid rgba(0,255,136,0.2); border-radius: 8px; padding: 12px; }
-        .scroll::-webkit-scrollbar { width: 6px; }
+        .panel { background: rgba(0,255,136,0.03); border: 2px solid rgba(0,255,136,0.2); border-radius: 8px; padding: ${isMobile ? '10px' : '12px'}; }
+        .scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .scroll::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.4); border-radius: 3px; }
-        .action-btn { padding: 10px 16px; font-family: 'Press Start 2P'; font-size: 8px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .action-btn { 
+          padding: ${isMobile ? '14px 16px' : '10px 16px'}; 
+          font-family: 'Press Start 2P'; 
+          font-size: ${isMobile ? '9px' : '8px'}; 
+          border: none; 
+          border-radius: 8px; 
+          cursor: pointer; 
+          transition: all 0.2s;
+          touch-action: manipulation;
+          -webkit-user-select: none;
+          user-select: none;
+        }
         .action-btn:hover { transform: translateY(-2px); }
+        .action-btn:active { transform: scale(0.95); }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .pulse { animation: pulse 2s infinite; }
-        .social-btn { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); cursor: pointer; transition: all 0.3s; color: #888; text-decoration: none; }
-        .social-btn:hover { border-color: #00ff88; color: #00ff88; transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0,255,136,0.3); }
+        .social-btn { 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          width: ${isMobile ? '56px' : '50px'}; 
+          height: ${isMobile ? '56px' : '50px'}; 
+          border-radius: 12px; 
+          border: 2px solid rgba(255,255,255,0.2); 
+          background: rgba(255,255,255,0.05); 
+          cursor: pointer; 
+          transition: all 0.3s; 
+          color: #888; 
+          text-decoration: none;
+          touch-action: manipulation;
+        }
+        .social-btn:hover, .social-btn:active { border-color: #00ff88; color: #00ff88; }
+        .tab-btn {
+          padding: ${isMobile ? '12px 8px' : '8px 12px'};
+          background: rgba(255,255,255,0.05);
+          border: none;
+          border-bottom: 3px solid transparent;
+          color: #666;
+          font-size: ${isMobile ? '18px' : '14px'};
+          cursor: pointer;
+          transition: all 0.2s;
+          flex: 1;
+          min-width: 0;
+          touch-action: manipulation;
+        }
+        .tab-btn.active {
+          color: #00ff88;
+          border-bottom-color: #00ff88;
+          background: rgba(0,255,136,0.1);
+        }
       `}</style>
 
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-          <h1 className="title" style={{ fontSize: '20px', margin: '0' }}>👾 DEGEN CULT 👾</h1>
-          <p style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', opacity: 0.5, marginTop: '8px' }}>PIXEL PFP MAKER ON SOLANA</p>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: isMobile ? '10px' : '15px' }}>
+          <h1 className="title" style={{ fontSize: isMobile ? '16px' : '20px', margin: '0' }}>👾 DEGEN CULT 👾</h1>
+          <p style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '6px' : '7px', opacity: 0.5, marginTop: '6px' }}>PIXEL PFP MAKER ON SOLANA</p>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+        {/* Wallet Connect */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: isMobile ? '10px' : '15px' }}>
           {!walletAddress ? (
             <button className="action-btn" onClick={connectWallet} disabled={isConnecting}
               style={{ background: 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {isConnecting ? <><span className="pulse">⏳</span> Connecting...</> : <>👻 Connect Phantom</>}
             </button>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ background: 'rgba(171, 71, 188, 0.2)', border: '2px solid #ab47bc', borderRadius: '8px', padding: '8px 15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '16px' }}>👻</span>
-                <span style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ab47bc' }}>{shortAddress(walletAddress)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ background: 'rgba(171, 71, 188, 0.2)', border: '2px solid #ab47bc', borderRadius: '8px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '14px' }}>👻</span>
+                <span style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '7px' : '8px', color: '#ab47bc' }}>{shortAddress(walletAddress)}</span>
               </div>
               <button className="action-btn" onClick={disconnectWallet} style={{ background: '#444', color: '#fff', padding: '8px 12px' }}>✖️</button>
             </div>
@@ -706,87 +849,140 @@ const App = () => {
         </div>
         {walletError && <div style={{ textAlign: 'center', color: '#ff4444', fontSize: '10px', marginBottom: '10px' }}>{walletError}</div>}
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
-          <button className="action-btn" onClick={() => setShowMarketplace(false)} style={{ background: !showMarketplace ? '#00ff88' : '#333', color: !showMarketplace ? '#000' : '#fff' }}>🎨 CREATE</button>
-          <button className="action-btn" onClick={() => setShowMarketplace(true)} style={{ background: showMarketplace ? '#00ff88' : '#333', color: showMarketplace ? '#000' : '#fff' }}>🏪 MARKETPLACE ({mintedNFTs.length})</button>
+        {/* Nav */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: isMobile ? '10px' : '15px' }}>
+          <button className="action-btn" onClick={() => setShowMarketplace(false)} style={{ background: !showMarketplace ? '#00ff88' : '#333', color: !showMarketplace ? '#000' : '#fff', flex: isMobile ? 1 : 'none' }}>🎨 CREATE</button>
+          <button className="action-btn" onClick={() => setShowMarketplace(true)} style={{ background: showMarketplace ? '#00ff88' : '#333', color: showMarketplace ? '#000' : '#fff', flex: isMobile ? 1 : 'none' }}>🏪 ({mintedNFTs.length})</button>
         </div>
 
         {!showMarketplace ? (
-          <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          // CREATE MODE
+          isMobile ? (
+            // MOBILE LAYOUT
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div className="float">
-                <div className="panel" style={{ position: 'relative' }}>
-                  <canvas ref={canvasRef} width={280} height={280} style={{ display: 'block', borderRadius: '6px', imageRendering: 'pixelated' }} />
-                  <div style={{ position: 'absolute', top: '12px', right: '12px' }}><RarityBadge rarity={getOverallRarity()} /></div>
+              {/* Canvas + Score Row */}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                <div className="panel" style={{ position: 'relative', flex: '0 0 auto' }}>
+                  <canvas ref={canvasRef} width={280} height={280} style={{ display: 'block', borderRadius: '6px', imageRendering: 'pixelated', width: '140px', height: '140px' }} />
+                  <div style={{ position: 'absolute', top: '8px', right: '8px' }}><RarityBadge rarity={getOverallRarity()} /></div>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="panel" style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#00ff88' }}>⭐ SCORE</div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '20px', color: rarities[getOverallRarity()].color }}>{getRarityScore()}</div>
+                    {isAlreadyMinted() && <div style={{ fontFamily: "'Press Start 2P'", fontSize: '6px', color: '#ff4444', marginTop: '4px' }}>⚠️ MINTED</div>}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    <button className="action-btn" onClick={randomize} style={{ background: 'linear-gradient(135deg, #9575CD, #64B5F6)', color: '#fff', padding: '10px 8px', fontSize: '8px' }}>🎲</button>
+                    <button className="action-btn" onClick={downloadPNG} style={{ background: 'linear-gradient(135deg, #4CAF50, #45a049)', color: '#fff', padding: '10px 8px', fontSize: '8px' }}>⬇️</button>
+                  </div>
                 </div>
               </div>
 
-              <div className="panel" style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88' }}>⭐ SCORE</div>
-                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '22px', color: rarities[getOverallRarity()].color }}>{getRarityScore()}</div>
-                {isAlreadyMinted() && <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#ff4444', marginTop: '5px' }}>⚠️ ALREADY MINTED</div>}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <button className="action-btn" onClick={randomize} style={{ background: 'linear-gradient(135deg, #9575CD, #64B5F6)', color: '#fff' }}>🎲 RANDOM</button>
-                <button className="action-btn" onClick={downloadPNG} style={{ background: 'linear-gradient(135deg, #4CAF50, #45a049)', color: '#fff' }}>⬇️ PNG</button>
+              {/* Action Buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px' }}>
                 <button className="action-btn" onClick={() => walletAddress ? setShowCard(true) : connectWallet()} 
-                  style={{ background: walletAddress ? 'linear-gradient(135deg, #ff6b6b, #ee5a5a)' : 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff' }}>
-                  {walletAddress ? '🎫 MINT NFT' : '👻 CONNECT'}
+                  style={{ background: walletAddress ? 'linear-gradient(135deg, #ff6b6b, #ee5a5a)' : 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff', fontSize: '8px' }}>
+                  {walletAddress ? '🎫 MINT' : '👻'}
                 </button>
-                <button className="action-btn" onClick={generateLore} style={{ background: 'linear-gradient(135deg, #a855f7, #9333ea)', color: '#fff' }}>📜 LORE</button>
+                <button className="action-btn" onClick={generateLore} style={{ background: 'linear-gradient(135deg, #a855f7, #9333ea)', color: '#fff', fontSize: '8px' }}>📜</button>
+                <button className="action-btn" onClick={() => setAnimEnabled(!animEnabled)} style={{ background: animEnabled ? '#00aa55' : '#444', color: '#fff', fontSize: '8px' }}>{animEnabled ? '⏸️' : '▶️'}</button>
+                <button className="action-btn" onClick={() => setSoundEnabled(!soundEnabled)} style={{ background: soundEnabled ? '#00aa55' : '#444', color: '#fff', fontSize: '8px' }}>{soundEnabled ? '🔊' : '🔇'}</button>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="action-btn" onClick={() => setAnimEnabled(!animEnabled)} style={{ flex: 1, background: animEnabled ? '#00aa55' : '#444', color: '#fff' }}>{animEnabled ? '⏸️' : '▶️'}</button>
-                <button className="action-btn" onClick={() => setSoundEnabled(!soundEnabled)} style={{ flex: 1, background: soundEnabled ? '#00aa55' : '#444', color: '#fff' }}>{soundEnabled ? '🔊' : '🔇'}</button>
+              {/* Category Tabs */}
+              <div style={{ display: 'flex', overflowX: 'auto', gap: '2px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '4px' }} className="scroll">
+                {sections.map(s => (
+                  <button key={s.id} className={`tab-btn ${activeSection === s.id ? 'active' : ''}`} onClick={() => { setActiveSection(s.id); playSound('click'); }}>
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Options Panel */}
+              <div className="panel" style={{ minHeight: '120px' }}>
+                {renderMobileSection()}
               </div>
             </div>
+          ) : (
+            // DESKTOP LAYOUT
+            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="float">
+                  <div className="panel" style={{ position: 'relative' }}>
+                    <canvas ref={canvasRef} width={280} height={280} style={{ display: 'block', borderRadius: '6px', imageRendering: 'pixelated' }} />
+                    <div style={{ position: 'absolute', top: '12px', right: '12px' }}><RarityBadge rarity={getOverallRarity()} /></div>
+                  </div>
+                </div>
 
-            <div className="panel scroll" style={{ flex: 1, minWidth: '300px', maxWidth: '550px', maxHeight: '550px', overflowY: 'auto' }}>
-              <Section title="🎭 PRESETS">
-                {Object.entries(presets).map(([k, v]) => <OptionBtn key={k} onClick={() => applyPreset(k)}>{v.name}</OptionBtn>)}
-              </Section>
-              <Section title="🎨 BACKGROUND">
-                {Object.entries(backgrounds).map(([k, v]) => <OptionBtn key={k} active={bg === k} onClick={() => setBg(k)}>{v.name}</OptionBtn>)}
-              </Section>
-              <Section title="👤 SKIN">
-                {skinColors.map(c => <ColorBtn key={c.color} active={skinColor === c.color} onClick={() => setSkinColor(c.color)} color={c.color} />)}
-              </Section>
-              <Section title="💇 HAIR STYLE">
-                {hairStyles.map(h => <OptionBtn key={h.id} active={hairStyle === h.id} onClick={() => setHairStyle(h.id)}>{h.name}</OptionBtn>)}
-              </Section>
-              <Section title="🎨 HAIR COLOR">
-                {hairColors.map(c => <ColorBtn key={c.color} active={hairColor === c.color} onClick={() => setHairColor(c.color)} color={c.color} />)}
-              </Section>
-              <Section title="👀 EYES">
-                {eyeStyles.map(e => <OptionBtn key={e.id} active={eyeStyle === e.id} onClick={() => setEyeStyle(e.id)}>{e.name}</OptionBtn>)}
-              </Section>
-              <Section title="👄 MOUTH">
-                {mouthStyles.map(m => <OptionBtn key={m.id} active={mouthStyle === m.id} onClick={() => setMouthStyle(m.id)}>{m.name}</OptionBtn>)}
-              </Section>
-              <Section title="🕶️ ACCESSORIES">
-                {accessories.map(a => <OptionBtn key={a.id || 'none'} active={accessory === a.id} onClick={() => setAccessory(a.id)}>{a.name}</OptionBtn>)}
-              </Section>
-              <Section title="🎩 HATS">
-                {hats.map(h => <OptionBtn key={h.id || 'none'} active={hat === h.id} onClick={() => setHat(h.id)}>{h.name}</OptionBtn>)}
-              </Section>
-              <Section title="🔫 ITEMS">
-                {items.map(i => <OptionBtn key={i.id || 'none'} active={item === i.id} onClick={() => setItem(i.id)}>{i.name}</OptionBtn>)}
-              </Section>
-              <Section title="✨ EFFECTS">
-                {effects.map(e => <OptionBtn key={e.id || 'none'} active={effect === e.id} onClick={() => setEffect(e.id)}>{e.name}</OptionBtn>)}
-              </Section>
-            </div>
-          </div>
-        ) : (
-          <div className="panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '12px', color: '#00ff88' }}>🏪 MARKETPLACE</div>
-              {walletAddress && (
+                <div className="panel" style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88' }}>⭐ SCORE</div>
+                  <div style={{ fontFamily: "'Press Start 2P'", fontSize: '22px', color: rarities[getOverallRarity()].color }}>{getRarityScore()}</div>
+                  {isAlreadyMinted() && <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#ff4444', marginTop: '5px' }}>⚠️ ALREADY MINTED</div>}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button className="action-btn" onClick={randomize} style={{ background: 'linear-gradient(135deg, #9575CD, #64B5F6)', color: '#fff' }}>🎲 RANDOM</button>
+                  <button className="action-btn" onClick={downloadPNG} style={{ background: 'linear-gradient(135deg, #4CAF50, #45a049)', color: '#fff' }}>⬇️ PNG</button>
+                  <button className="action-btn" onClick={() => walletAddress ? setShowCard(true) : connectWallet()} 
+                    style={{ background: walletAddress ? 'linear-gradient(135deg, #ff6b6b, #ee5a5a)' : 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff' }}>
+                    {walletAddress ? '🎫 MINT NFT' : '👻 CONNECT'}
+                  </button>
+                  <button className="action-btn" onClick={generateLore} style={{ background: 'linear-gradient(135deg, #a855f7, #9333ea)', color: '#fff' }}>📜 LORE</button>
+                </div>
+
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="action-btn" onClick={() => setViewMode('all')} style={{ background: viewMode === 'all' ? '#00ff88' : '#333', color: viewMode === 'all' ? '#000' : '#fff', padding: '6px 12px', fontSize: '7px' }}>ALL ({mintedNFTs.length})</button>
-                  <button className="action-btn" onClick={() => setViewMode('mine')} style={{ background: viewMode === 'mine' ? '#ab47bc' : '#333', color: '#fff', padding: '6px 12px', fontSize: '7px' }}>MY NFTs ({mintedNFTs.filter(n => n.owner === walletAddress).length})</button>
+                  <button className="action-btn" onClick={() => setAnimEnabled(!animEnabled)} style={{ flex: 1, background: animEnabled ? '#00aa55' : '#444', color: '#fff' }}>{animEnabled ? '⏸️' : '▶️'}</button>
+                  <button className="action-btn" onClick={() => setSoundEnabled(!soundEnabled)} style={{ flex: 1, background: soundEnabled ? '#00aa55' : '#444', color: '#fff' }}>{soundEnabled ? '🔊' : '🔇'}</button>
+                </div>
+              </div>
+
+              <div className="panel scroll" style={{ flex: 1, minWidth: '300px', maxWidth: '550px', maxHeight: '550px', overflowY: 'auto' }}>
+                <Section title="🎭 PRESETS">
+                  {Object.entries(presets).map(([k, v]) => <OptionBtn key={k} onClick={() => applyPreset(k)}>{v.name}</OptionBtn>)}
+                </Section>
+                <Section title="🎨 BACKGROUND">
+                  {Object.entries(backgrounds).map(([k, v]) => <OptionBtn key={k} active={bg === k} onClick={() => setBg(k)}>{v.name}</OptionBtn>)}
+                </Section>
+                <Section title="👤 SKIN">
+                  {skinColors.map(c => <ColorBtn key={c.color} active={skinColor === c.color} onClick={() => setSkinColor(c.color)} color={c.color} />)}
+                </Section>
+                <Section title="💇 HAIR STYLE">
+                  {hairStyles.map(h => <OptionBtn key={h.id} active={hairStyle === h.id} onClick={() => setHairStyle(h.id)}>{h.name}</OptionBtn>)}
+                </Section>
+                <Section title="🎨 HAIR COLOR">
+                  {hairColors.map(c => <ColorBtn key={c.color} active={hairColor === c.color} onClick={() => setHairColor(c.color)} color={c.color} />)}
+                </Section>
+                <Section title="👀 EYES">
+                  {eyeStyles.map(e => <OptionBtn key={e.id} active={eyeStyle === e.id} onClick={() => setEyeStyle(e.id)}>{e.name}</OptionBtn>)}
+                </Section>
+                <Section title="👄 MOUTH">
+                  {mouthStyles.map(m => <OptionBtn key={m.id} active={mouthStyle === m.id} onClick={() => setMouthStyle(m.id)}>{m.name}</OptionBtn>)}
+                </Section>
+                <Section title="🕶️ ACCESSORIES">
+                  {accessories.map(a => <OptionBtn key={a.id || 'none'} active={accessory === a.id} onClick={() => setAccessory(a.id)}>{a.name}</OptionBtn>)}
+                </Section>
+                <Section title="🎩 HATS">
+                  {hats.map(h => <OptionBtn key={h.id || 'none'} active={hat === h.id} onClick={() => setHat(h.id)}>{h.name}</OptionBtn>)}
+                </Section>
+                <Section title="🔫 ITEMS">
+                  {items.map(i => <OptionBtn key={i.id || 'none'} active={item === i.id} onClick={() => setItem(i.id)}>{i.name}</OptionBtn>)}
+                </Section>
+                <Section title="✨ EFFECTS">
+                  {effects.map(e => <OptionBtn key={e.id || 'none'} active={effect === e.id} onClick={() => setEffect(e.id)}>{e.name}</OptionBtn>)}
+                </Section>
+              </div>
+            </div>
+          )
+        ) : (
+          // MARKETPLACE
+          <div className="panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '10px' : '12px', color: '#00ff88' }}>🏪 MARKETPLACE</div>
+              {walletAddress && (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button className="action-btn" onClick={() => setViewMode('all')} style={{ background: viewMode === 'all' ? '#00ff88' : '#333', color: viewMode === 'all' ? '#000' : '#fff', padding: '8px 12px', fontSize: '7px' }}>ALL ({mintedNFTs.length})</button>
+                  <button className="action-btn" onClick={() => setViewMode('mine')} style={{ background: viewMode === 'mine' ? '#ab47bc' : '#333', color: '#fff', padding: '8px 12px', fontSize: '7px' }}>MINE ({mintedNFTs.filter(n => n.owner === walletAddress).length})</button>
                 </div>
               )}
             </div>
@@ -794,26 +990,25 @@ const App = () => {
             {isLoading ? (
               <div style={{ textAlign: 'center', padding: '40px' }}>
                 <div className="pulse" style={{ fontSize: '40px' }}>⏳</div>
-                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px', marginTop: '15px' }}>Loading NFTs...</div>
               </div>
             ) : displayedNFTs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>🖼️</div>
-                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>{viewMode === 'mine' ? 'You have no NFTs yet!' : 'No NFTs minted yet!'}</div>
+                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>No NFTs yet!</div>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(180px, 1fr))', gap: isMobile ? '10px' : '15px' }}>
                 {displayedNFTs.map(nft => (
-                  <div key={nft.id} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '12px', border: `2px solid ${nft.owner === walletAddress ? '#ab47bc' : rarities[nft.rarity].color}` }}>
+                  <div key={nft.id} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: isMobile ? '8px' : '12px', border: `2px solid ${nft.owner === walletAddress ? '#ab47bc' : rarities[nft.rarity].color}` }}>
                     <img src={nft.image} alt={`NFT #${nft.id}`} style={{ width: '100%', borderRadius: '6px', imageRendering: 'pixelated' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                      <span style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>#{nft.id}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                      <span style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '8px' : '10px' }}>#{nft.id}</span>
                       <RarityBadge rarity={nft.rarity} />
                     </div>
-                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '14px', color: rarities[nft.rarity].color, textAlign: 'center', marginTop: '8px' }}>{nft.score}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginTop: '8px' }}>
-                      <span style={{ fontSize: '12px' }}>👻</span>
-                      <span style={{ fontSize: '9px', color: nft.owner === walletAddress ? '#ab47bc' : '#888' }}>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '12px' : '14px', color: rarities[nft.rarity].color, textAlign: 'center', marginTop: '6px' }}>{nft.score}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '6px' }}>
+                      <span style={{ fontSize: '10px' }}>👻</span>
+                      <span style={{ fontSize: '8px', color: nft.owner === walletAddress ? '#ab47bc' : '#888' }}>
                         {nft.owner === walletAddress ? 'YOU' : shortAddress(nft.owner)}
                       </span>
                     </div>
@@ -824,22 +1019,25 @@ const App = () => {
           </div>
         )}
 
+        {/* Lore Display */}
         {generatedLore && !showMarketplace && (
           <div className="panel" style={{ marginTop: '15px', textAlign: 'center' }}>
-            <pre style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', whiteSpace: 'pre-wrap', lineHeight: '1.8', color: '#aaa' }}>{generatedLore}</pre>
+            <pre style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '7px' : '8px', whiteSpace: 'pre-wrap', lineHeight: '1.8', color: '#aaa' }}>{generatedLore}</pre>
             <button className="action-btn" onClick={() => navigator.clipboard.writeText(generatedLore)} style={{ marginTop: '10px', background: '#333', color: '#00ff88', border: '1px solid #00ff88' }}>📋 COPY</button>
           </div>
         )}
 
+        {/* Messages */}
         {mintError && <div style={{ background: 'rgba(255,0,0,0.2)', border: '2px solid #ff4444', borderRadius: '8px', padding: '12px', marginTop: '15px', textAlign: 'center', fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ff4444' }}>{mintError}</div>}
         {mintSuccess && <div style={{ background: 'rgba(0,255,0,0.2)', border: '2px solid #00ff88', borderRadius: '8px', padding: '12px', marginTop: '15px', textAlign: 'center', fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88' }}>{mintSuccess}</div>}
 
+        {/* Mint Modal */}
         {showCard && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setShowCard(false)}>
-            <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #2a2a4e)', border: '3px solid #ab47bc', borderRadius: '12px', padding: '20px', maxWidth: '340px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '12px', color: '#ab47bc', marginBottom: '15px' }}>👻 MINT NFT</div>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }} onClick={() => setShowCard(false)}>
+            <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #2a2a4e)', border: '3px solid #ab47bc', borderRadius: '12px', padding: isMobile ? '15px' : '20px', maxWidth: '340px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '10px' : '12px', color: '#ab47bc', marginBottom: '15px' }}>👻 MINT NFT</div>
               <div style={{ background: backgrounds[bg]?.color || '#333', borderRadius: '8px', padding: '10px', marginBottom: '15px' }}>
-                <canvas ref={canvasRef} width={280} height={280} style={{ borderRadius: '6px', imageRendering: 'pixelated', width: '100%' }} />
+                <canvas ref={canvasRef} width={280} height={280} style={{ borderRadius: '6px', imageRendering: 'pixelated', width: '100%', maxWidth: '200px' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
                 <span style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>#{(mintedNFTs.length + 1).toString().padStart(5, '0')}</span>
@@ -847,9 +1045,9 @@ const App = () => {
               </div>
               <div style={{ background: 'rgba(171, 71, 188, 0.2)', borderRadius: '6px', padding: '10px', marginBottom: '15px' }}>
                 <div style={{ fontSize: '10px', color: '#888' }}>Minting to:</div>
-                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '9px', color: '#ab47bc', marginTop: '5px' }}>{shortAddress(walletAddress)}</div>
+                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ab47bc', marginTop: '5px' }}>{shortAddress(walletAddress)}</div>
               </div>
-              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '18px', color: rarities[getOverallRarity()].color, marginBottom: '15px' }}>SCORE: {getRarityScore()}</div>
+              <div style={{ fontFamily: "'Press Start 2P'", fontSize: isMobile ? '16px' : '18px', color: rarities[getOverallRarity()].color, marginBottom: '15px' }}>SCORE: {getRarityScore()}</div>
               {isAlreadyMinted() ? (
                 <div style={{ background: 'rgba(255,0,0,0.2)', border: '2px solid #ff4444', borderRadius: '8px', padding: '10px', marginBottom: '15px' }}>
                   <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ff4444' }}>⚠️ ALREADY EXISTS!</div>
@@ -863,8 +1061,8 @@ const App = () => {
         )}
 
         {/* FOOTER */}
-        <div style={{ marginTop: '40px', paddingTop: '30px', borderTop: '2px solid rgba(0,255,136,0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '25px' }}>
+        <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '2px solid rgba(0,255,136,0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px' }}>
             <a href={CONFIG.TWITTER_URL} target="_blank" rel="noopener noreferrer" className="social-btn" title="Follow us on X">
               <TwitterIcon />
             </a>
@@ -873,17 +1071,17 @@ const App = () => {
             </a>
           </div>
 
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88', marginBottom: '10px' }}>📜 CONTRACT ADDRESS</div>
+          <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+            <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#00ff88', marginBottom: '8px' }}>📜 CONTRACT</div>
             <div onClick={copyContract}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(0,255,136,0.3)', borderRadius: '8px', padding: '12px 20px', cursor: 'pointer', transition: 'all 0.3s' }}>
-              <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#888', wordBreak: 'break-all' }}>{CONFIG.CONTRACT_ADDRESS}</span>
-              <span style={{ fontSize: '14px' }}>{copied ? '✅' : '📋'}</span>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(0,255,136,0.3)', borderRadius: '8px', padding: '10px 15px', cursor: 'pointer', maxWidth: '100%' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: isMobile ? '8px' : '11px', color: '#888', wordBreak: 'break-all' }}>{CONFIG.CONTRACT_ADDRESS}</span>
+              <span style={{ fontSize: '12px', flexShrink: 0 }}>{copied ? '✅' : '📋'}</span>
             </div>
-            {copied && <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#00ff88', marginTop: '8px' }}>Copied!</div>}
+            {copied && <div style={{ fontFamily: "'Press Start 2P'", fontSize: '6px', color: '#00ff88', marginTop: '6px' }}>Copied!</div>}
           </div>
 
-          <div style={{ textAlign: 'center', fontFamily: "'Press Start 2P'", fontSize: '7px', opacity: 0.3 }}>
+          <div style={{ textAlign: 'center', fontFamily: "'Press Start 2P'", fontSize: '6px', opacity: 0.3 }}>
             POWERED BY SOLANA 👾 {mintedNFTs.length} MINTED
           </div>
         </div>
