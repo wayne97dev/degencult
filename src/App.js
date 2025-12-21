@@ -34,6 +34,7 @@ const App = () => {
   const [effect, setEffect] = useState(null);
   
   const [showCard, setShowCard] = useState(false);
+  const [mintPreviewImage, setMintPreviewImage] = useState(null);
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
   const [selectedNFT, setSelectedNFT] = useState(null);
@@ -66,7 +67,7 @@ const App = () => {
 
   // 🔗 Solana Connection (Mainnet)
   // Per RPC dedicato e più veloce, registrati gratis su helius.dev
-  const SOLANA_RPC = "https://rpc.ankr.com/solana";
+  const SOLANA_RPC = "https://solana.publicnode.com";
   const connection = new Connection(SOLANA_RPC, 'confirmed');
 
   // Wallet State
@@ -1043,7 +1044,14 @@ const App = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <button className="action-btn" onClick={randomize} style={{ background: 'linear-gradient(135deg, #9575CD, #64B5F6)', color: '#fff' }}>🎲 RANDOM</button>
                 <button className="action-btn" onClick={downloadPNG} style={{ background: 'linear-gradient(135deg, #4CAF50, #45a049)', color: '#fff' }}>⬇️ PNG</button>
-                <button className="action-btn" onClick={() => walletAddress ? setShowCard(true) : connectWallet()} 
+                <button className="action-btn" onClick={() => {
+                  if (walletAddress) {
+                    setMintPreviewImage(canvasRef.current.toDataURL('image/png'));
+                    setShowCard(true);
+                  } else {
+                    connectWallet();
+                  }
+                }} 
                   style={{ background: walletAddress ? 'linear-gradient(135deg, #ff6b6b, #ee5a5a)' : 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff' }}>
                   {walletAddress ? '🎫 MINT NFT' : '👻 CONNECT'}
                 </button>
@@ -1192,7 +1200,7 @@ const App = () => {
             <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #2a2a4e)', border: '3px solid #ab47bc', borderRadius: '12px', padding: '20px', maxWidth: '340px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
               <div style={{ fontFamily: "'Press Start 2P'", fontSize: '12px', color: '#ab47bc', marginBottom: '15px' }}>👻 MINT NFT</div>
               <div style={{ background: backgrounds[bg]?.color || '#333', borderRadius: '8px', padding: '10px', marginBottom: '15px' }}>
-                <canvas ref={canvasRef} width={280} height={280} style={{ borderRadius: '6px', imageRendering: 'pixelated', width: '100%' }} />
+                <img src={mintPreviewImage} alt="NFT Preview" style={{ width: '100%', borderRadius: '6px', imageRendering: 'pixelated' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
                 <span style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>#{(mintedNFTs.length + 1).toString().padStart(5, '0')}</span>
