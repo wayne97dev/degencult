@@ -796,14 +796,41 @@ const App = () => {
   );
 
   const OptionBtn = ({ active, onClick, children }) => (
-    <button type="button" onClick={(e) => { e.preventDefault(); onClick(); playSound('select'); }}
-      style={{ padding: '6px 10px', background: active ? 'linear-gradient(135deg, #00ff88, #00aa55)' : 'rgba(255,255,255,0.1)', border: `2px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, borderRadius: '4px', color: active ? '#000' : '#fff', fontSize: '10px', fontWeight: '600', cursor: 'pointer' }}
+    <button type="button" 
+      onPointerDown={(e) => { e.stopPropagation(); }}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); playSound('select'); }}
+      style={{ 
+        padding: '6px 10px', 
+        background: active ? 'linear-gradient(135deg, #00ff88, #00aa55)' : 'rgba(255,255,255,0.1)', 
+        border: `2px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
+        borderRadius: '4px', 
+        color: active ? '#000' : '#fff', 
+        fontSize: '10px', 
+        fontWeight: '600', 
+        cursor: 'pointer',
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+      }}
     >{children}</button>
   );
 
   const ColorBtn = ({ active, onClick, color }) => (
-    <button type="button" onClick={(e) => { e.preventDefault(); onClick(); playSound('select'); }}
-      style={{ width: '28px', height: '28px', background: color, border: `3px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, borderRadius: '4px', cursor: 'pointer', boxShadow: active ? '0 0 10px rgba(0,255,136,0.5)' : 'none' }}
+    <button type="button" 
+      onPointerDown={(e) => { e.stopPropagation(); }}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); playSound('select'); }}
+      style={{ 
+        width: '28px', 
+        height: '28px', 
+        background: color, 
+        border: `3px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
+        borderRadius: '4px', 
+        cursor: 'pointer', 
+        boxShadow: active ? '0 0 10px rgba(0,255,136,0.5)' : 'none',
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+      }}
     />
   );
 
@@ -907,7 +934,7 @@ const App = () => {
               </div>
             </div>
 
-            <div className="panel scroll" style={{ flex: 1, minWidth: '300px', maxWidth: '550px', maxHeight: '550px', overflowY: 'auto' }}>
+            <div className="panel scroll" style={{ flex: 1, minWidth: '300px', maxWidth: '550px', maxHeight: '550px', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
               <Section title="🎭 PRESETS">
                 {Object.entries(presets).map(([k, v]) => <OptionBtn key={k} onClick={() => applyPreset(k)}>{v.name}</OptionBtn>)}
               </Section>
