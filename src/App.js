@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // ═══════════════════════════════════════════════════════════════
 // 🔥 FIREBASE CONFIGURATION
@@ -56,8 +57,17 @@ const App = () => {
     TWITTER_URL: "https://x.com/YOUR_TWITTER_HERE",
     DEXSCREENER_URL: "https://dexscreener.com/solana/YOUR_TOKEN_HERE",
     CONTRACT_ADDRESS: "YOUR_CONTRACT_ADDRESS_HERE",
+    // 💰 WALLET & FEES CONFIG
+    FEE_WALLET: "YOUR_SOLANA_WALLET_HERE", // Il tuo wallet per ricevere fee e mint
+    FEE_PERCENT: 2.5, // Percentuale fee sulle vendite (2.5%)
+    MINT_PRICE: 0.05, // Costo per mintare un NFT in SOL
   };
   // ═══════════════════════════════════════════════════════════════
+
+  // 🔗 Solana Connection (Mainnet)
+  const SOLANA_RPC = "https://api.mainnet-beta.solana.com";
+  // Per testare usa Devnet: "https://api.devnet.solana.com"
+  const connection = new Connection(SOLANA_RPC, 'confirmed');
 
   // Wallet State
   const [walletAddress, setWalletAddress] = useState(null);
@@ -617,7 +627,7 @@ const App = () => {
 
   }, [bg, skinColor, hairStyle, hairColor, eyeStyle, mouthStyle, accessory, hat, item, effect, animFrame, animEnabled]);
 
-  // Mint NFT
+  // Mint NFT (with SOL payment)
   const mintNFT = async () => {
     if (!walletAddress) {
       setMintError('Connect your Phantom wallet first!');
@@ -637,6 +647,50 @@ const App = () => {
     setIsMinting(true);
 
     try {
+      const provider = getPhantomProvider();
+      if (!provider) {
+        setMintError('Phantom wallet not found!');
+        setIsMinting(false);
+        return;
+      }
+
+      // Check if mint price is configured and FEE_WALLET is set
+      if (CONFIG.MINT_PRICE > 0 && CONFIG.FEE_WALLET && CONFIG.FEE_WALLET !== "YOUR_SOLANA_WALLET_HERE") {
+        
+        // Create mint payment transaction
+        const transaction = new Transaction();
+        
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = new PublicKey(walletAddress);
+
+        // Transfer mint fee to platform wallet
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: new PublicKey(walletAddress),
+            toPubkey: new PublicKey(CONFIG.FEE_WALLET),
+            lamports: Math.floor(CONFIG.MINT_PRICE * LAMPORTS_PER_SOL),
+          })
+        );
+
+        setMintSuccess(`⏳ Pay ${CONFIG.MINT_PRICE} SOL to mint...`);
+        
+        // Sign and send transaction
+        const { signature } = await provider.signAndSendTransaction(transaction);
+        
+        setMintSuccess('⏳ Confirming payment...');
+        
+        // Wait for confirmation
+        const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+        
+        if (confirmation.value.err) {
+          throw new Error('Payment failed');
+        }
+
+        setMintSuccess('✅ Payment confirmed! Creating NFT...');
+      }
+
+      // Create NFT after payment (or directly if no payment required)
       const canvas = canvasRef.current;
       const imageData = canvas.toDataURL('image/png');
       const serialNumber = (mintedNFTs.length + 1).toString().padStart(5, '0');
@@ -664,7 +718,13 @@ const App = () => {
       setShowCard(false);
     } catch (error) {
       console.error('Mint error:', error);
-      setMintError('Failed to mint NFT. Please try again.');
+      if (error.message?.includes('User rejected')) {
+        setMintError('Transaction cancelled');
+      } else if (error.message?.includes('insufficient')) {
+        setMintError('Insufficient SOL balance!');
+      } else {
+        setMintError('Failed to mint: ' + (error.message || 'Unknown error'));
+      }
       playSound('error');
     }
 
@@ -716,7 +776,7 @@ const App = () => {
     }
   };
 
-  // Buy NFT (simulated - just transfers ownership)
+  // Buy NFT (REAL SOL TRANSFER)
   const buyNFT = async (nft) => {
     if (!walletAddress) {
       setMintError('Connect your wallet to buy!');
@@ -728,12 +788,64 @@ const App = () => {
       return;
     }
 
+    setMintError('');
+    setMintSuccess('');
+
     try {
-      // In a real implementation, you would:
-      // 1. Create a Solana transaction to transfer SOL
-      // 2. Wait for confirmation
-      // 3. Then update the database
+      const provider = getPhantomProvider();
+      if (!provider) {
+        setMintError('Phantom wallet not found!');
+        return;
+      }
+
+      // Calculate amounts
+      const totalPrice = nft.price;
+      const feeAmount = (totalPrice * CONFIG.FEE_PERCENT) / 100;
+      const sellerAmount = totalPrice - feeAmount;
+
+      // Create transaction
+      const transaction = new Transaction();
       
+      // Get latest blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = new PublicKey(walletAddress);
+
+      // Transfer to Seller
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: new PublicKey(nft.owner),
+          lamports: Math.floor(sellerAmount * LAMPORTS_PER_SOL),
+        })
+      );
+
+      // Transfer Fee to Platform (if fee wallet is set)
+      if (CONFIG.FEE_WALLET && CONFIG.FEE_WALLET !== "YOUR_SOLANA_WALLET_HERE" && feeAmount > 0) {
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: new PublicKey(walletAddress),
+            toPubkey: new PublicKey(CONFIG.FEE_WALLET),
+            lamports: Math.floor(feeAmount * LAMPORTS_PER_SOL),
+          })
+        );
+      }
+
+      // Sign and send transaction
+      setMintSuccess('⏳ Please approve the transaction in Phantom...');
+      
+      const { signature } = await provider.signAndSendTransaction(transaction);
+      
+      setMintSuccess('⏳ Confirming transaction...');
+      
+      // Wait for confirmation
+      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+      
+      if (confirmation.value.err) {
+        throw new Error('Transaction failed');
+      }
+
+      // Update database after successful transfer
       await updateNFTInFirebase(nft.id, {
         owner: walletAddress,
         forSale: false,
@@ -741,12 +853,20 @@ const App = () => {
         listedAt: null,
         lastSoldPrice: nft.price,
         lastSoldAt: new Date().toISOString(),
+        lastTxSignature: signature,
       });
       
       playSound('mint');
-      setMintSuccess(`🎉 You bought NFT #${nft.serialNumber} for ${nft.price} SOL!`);
+      setMintSuccess(`🎉 You bought NFT #${nft.serialNumber} for ${nft.price} SOL! Tx: ${signature.slice(0, 8)}...`);
     } catch (error) {
-      setMintError('Failed to buy NFT');
+      console.error('Buy error:', error);
+      if (error.message?.includes('User rejected')) {
+        setMintError('Transaction cancelled by user');
+      } else if (error.message?.includes('insufficient')) {
+        setMintError('Insufficient SOL balance!');
+      } else {
+        setMintError('Transaction failed: ' + (error.message || 'Unknown error'));
+      }
       playSound('error');
     }
   };
@@ -1082,7 +1202,10 @@ const App = () => {
                 <div style={{ fontSize: '10px', color: '#888' }}>Minting to:</div>
                 <div style={{ fontFamily: "'Press Start 2P'", fontSize: '9px', color: '#ab47bc', marginTop: '5px' }}>{shortAddress(walletAddress)}</div>
               </div>
-              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '18px', color: rarities[getOverallRarity()].color, marginBottom: '15px' }}>SCORE: {getRarityScore()}</div>
+              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '18px', color: rarities[getOverallRarity()].color, marginBottom: '10px' }}>SCORE: {getRarityScore()}</div>
+              <div style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid #00ff88', borderRadius: '6px', padding: '8px', marginBottom: '15px' }}>
+                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88' }}>💰 MINT PRICE: {CONFIG.MINT_PRICE} SOL</div>
+              </div>
               {isAlreadyMinted() ? (
                 <div style={{ background: 'rgba(255,0,0,0.2)', border: '2px solid #ff4444', borderRadius: '8px', padding: '10px', marginBottom: '15px' }}>
                   <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ff4444' }}>⚠️ ALREADY EXISTS!</div>
@@ -1090,7 +1213,7 @@ const App = () => {
               ) : (
                 <button className="action-btn" onClick={mintNFT} disabled={isMinting}
                   style={{ width: '100%', background: 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff', padding: '15px' }}>
-                  {isMinting ? <><span className="pulse">⏳</span> Minting...</> : '✨ MINT NFT'}
+                  {isMinting ? <><span className="pulse">⏳</span> Minting...</> : `✨ MINT (${CONFIG.MINT_PRICE} SOL)`}
                 </button>
               )}
               <button className="action-btn" onClick={() => setShowCard(false)} style={{ width: '100%', marginTop: '10px', background: '#333', color: '#fff' }}>❌ CANCEL</button>
