@@ -1,4 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+
+// ═══════════════════════════════════════════════════════════════
+// 🔥 FIREBASE CONFIGURATION
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCK3N54-FOioy2246jNUZ8N-JSCIiJxyjs",
+  authDomain: "degen-cult.firebaseapp.com",
+  projectId: "degen-cult",
+  storageBucket: "degen-cult.firebasestorage.app",
+  messagingSenderId: "676768816506",
+  appId: "1:676768816506:web:eeed1eb5432ce46af68ac3"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+// ═══════════════════════════════════════════════════════════════
 
 const App = () => {
   const canvasRef = useRef(null);
@@ -15,6 +34,9 @@ const App = () => {
   
   const [showCard, setShowCard] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [selectedNFT, setSelectedNFT] = useState(null);
+  const [sellPrice, setSellPrice] = useState('');
   const [animEnabled, setAnimEnabled] = useState(true);
   const [animFrame, setAnimFrame] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -23,6 +45,7 @@ const App = () => {
   const [mintError, setMintError] = useState('');
   const [mintSuccess, setMintSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isMinting, setIsMinting] = useState(false);
   const [viewMode, setViewMode] = useState('all');
   const [copied, setCopied] = useState(false);
 
@@ -51,15 +74,69 @@ const App = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Check if Phantom is installed
+  // ═══════════════════════════════════════════════════════════════
+  // 🔥 FIREBASE FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════
+  
+  // Load NFTs from Firebase (real-time)
+  useEffect(() => {
+    setIsLoading(true);
+    const nftsRef = collection(db, 'nfts');
+    const q = query(nftsRef, orderBy('mintedAt', 'desc'));
+    
+    // Real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const nfts = [];
+      snapshot.forEach((doc) => {
+        nfts.push({ id: doc.id, ...doc.data() });
+      });
+      setMintedNFTs(nfts);
+      setIsLoading(false);
+    }, (error) => {
+      console.error('Error loading NFTs:', error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Save NFT to Firebase
+  const saveNFTToFirebase = async (nftData) => {
+    try {
+      const docRef = await addDoc(collection(db, 'nfts'), nftData);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error saving NFT:', error);
+      throw error;
+    }
+  };
+
+  // Update NFT in Firebase (for selling/buying)
+  const updateNFTInFirebase = async (nftId, updates) => {
+    try {
+      const nftRef = doc(db, 'nfts', nftId);
+      await updateDoc(nftRef, updates);
+    } catch (error) {
+      console.error('Error updating NFT:', error);
+      throw error;
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // 🔧 PHANTOM WALLET
+  // ═══════════════════════════════════════════════════════════════
   const getPhantomProvider = () => {
-    if (typeof window !== 'undefined' && window.solana?.isPhantom) {
-      return window.solana;
+    if (typeof window !== 'undefined') {
+      if (window.phantom?.solana?.isPhantom) {
+        return window.phantom.solana;
+      }
+      if (window.solana?.isPhantom) {
+        return window.solana;
+      }
     }
     return null;
   };
 
-  // Connect Phantom Wallet
   const connectWallet = async () => {
     setWalletError('');
     setIsConnecting(true);
@@ -68,7 +145,14 @@ const App = () => {
       const provider = getPhantomProvider();
       
       if (!provider) {
-        setWalletError('Phantom wallet not found! Please install it from phantom.app');
+        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobileDevice) {
+          const currentUrl = encodeURIComponent(window.location.href);
+          window.location.href = `https://phantom.app/ul/browse/${currentUrl}`;
+          setIsConnecting(false);
+          return;
+        }
+        setWalletError('Phantom not found! Install from phantom.app');
         setIsConnecting(false);
         return;
       }
@@ -77,20 +161,19 @@ const App = () => {
       const address = response.publicKey.toString();
       setWalletAddress(address);
       playSound('mint');
-      
       localStorage.setItem('degenCultWallet', address);
     } catch (err) {
-      if (err.code === 4001) {
+      console.error('Wallet error:', err);
+      if (err.code === 4001 || err.message?.includes('User rejected')) {
         setWalletError('Connection rejected by user');
       } else {
-        setWalletError('Failed to connect: ' + err.message);
+        setWalletError('Refresh the page and try again');
       }
     }
     
     setIsConnecting(false);
   };
 
-  // Disconnect wallet
   const disconnectWallet = async () => {
     try {
       const provider = getPhantomProvider();
@@ -103,9 +186,9 @@ const App = () => {
     playSound('click');
   };
 
-  // Check for existing connection on load
   useEffect(() => {
     const checkWallet = async () => {
+      await new Promise(resolve => setTimeout(resolve, 500));
       const savedWallet = localStorage.getItem('degenCultWallet');
       const provider = getPhantomProvider();
       
@@ -118,32 +201,8 @@ const App = () => {
         }
       }
     };
-    
     checkWallet();
   }, []);
-
-  // Load NFTs from localStorage
-  useEffect(() => {
-    setIsLoading(true);
-    try {
-      const saved = localStorage.getItem('degenCultNFTs');
-      if (saved) {
-        setMintedNFTs(JSON.parse(saved));
-      }
-    } catch (err) {
-      setMintedNFTs([]);
-    }
-    setIsLoading(false);
-  }, []);
-
-  // Save NFTs to localStorage
-  const saveNFTs = (nfts) => {
-    try {
-      localStorage.setItem('degenCultNFTs', JSON.stringify(nfts));
-    } catch (err) {
-      console.error('Failed to save NFTs:', err);
-    }
-  };
 
   // Generate unique hash for current config
   const getConfigHash = () => {
@@ -155,7 +214,6 @@ const App = () => {
     return mintedNFTs.some(nft => nft.hash === getConfigHash());
   };
 
-  // Get shortened wallet address
   const shortAddress = (addr) => {
     if (!addr) return '';
     return addr.slice(0, 4) + '...' + addr.slice(-4);
@@ -576,29 +634,121 @@ const App = () => {
       return;
     }
 
-    const canvas = canvasRef.current;
-    const imageData = canvas.toDataURL('image/png');
-    const serialNumber = (mintedNFTs.length + 1).toString().padStart(5, '0');
-    const score = getRarityScore();
+    setIsMinting(true);
 
-    const newNFT = {
-      id: serialNumber,
-      hash: getConfigHash(),
-      image: imageData,
-      config: { bg, skinColor, hairStyle, hairColor, eyeStyle, mouthStyle, accessory, hat, item, effect },
-      score,
-      rarity: getOverallRarity(score),
-      owner: walletAddress,
-      mintedAt: new Date().toISOString(),
-    };
+    try {
+      const canvas = canvasRef.current;
+      const imageData = canvas.toDataURL('image/png');
+      const serialNumber = (mintedNFTs.length + 1).toString().padStart(5, '0');
+      const score = getRarityScore();
 
-    const updatedNFTs = [...mintedNFTs, newNFT];
-    setMintedNFTs(updatedNFTs);
-    saveNFTs(updatedNFTs);
-    
-    playSound('mint');
-    setMintSuccess(`🎉 NFT #${serialNumber} minted to ${shortAddress(walletAddress)}!`);
-    setShowCard(false);
+      const nftData = {
+        serialNumber,
+        hash: getConfigHash(),
+        image: imageData,
+        config: { bg, skinColor, hairStyle, hairColor, eyeStyle, mouthStyle, accessory, hat, item, effect },
+        score,
+        rarity: getOverallRarity(score),
+        owner: walletAddress,
+        mintedAt: new Date().toISOString(),
+        // Marketplace fields
+        forSale: false,
+        price: null,
+        listedAt: null,
+      };
+
+      await saveNFTToFirebase(nftData);
+      
+      playSound('mint');
+      setMintSuccess(`🎉 NFT #${serialNumber} minted to ${shortAddress(walletAddress)}!`);
+      setShowCard(false);
+    } catch (error) {
+      console.error('Mint error:', error);
+      setMintError('Failed to mint NFT. Please try again.');
+      playSound('error');
+    }
+
+    setIsMinting(false);
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // 🏪 MARKETPLACE FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════
+  
+  // List NFT for sale
+  const listForSale = async () => {
+    if (!selectedNFT || !sellPrice || parseFloat(sellPrice) <= 0) {
+      setMintError('Please enter a valid price');
+      return;
+    }
+
+    try {
+      await updateNFTInFirebase(selectedNFT.id, {
+        forSale: true,
+        price: parseFloat(sellPrice),
+        listedAt: new Date().toISOString(),
+      });
+      
+      playSound('mint');
+      setMintSuccess(`NFT listed for ${sellPrice} SOL!`);
+      setShowSellModal(false);
+      setSelectedNFT(null);
+      setSellPrice('');
+    } catch (error) {
+      setMintError('Failed to list NFT');
+      playSound('error');
+    }
+  };
+
+  // Cancel listing
+  const cancelListing = async (nft) => {
+    try {
+      await updateNFTInFirebase(nft.id, {
+        forSale: false,
+        price: null,
+        listedAt: null,
+      });
+      playSound('select');
+      setMintSuccess('Listing cancelled!');
+    } catch (error) {
+      setMintError('Failed to cancel listing');
+      playSound('error');
+    }
+  };
+
+  // Buy NFT (simulated - just transfers ownership)
+  const buyNFT = async (nft) => {
+    if (!walletAddress) {
+      setMintError('Connect your wallet to buy!');
+      return;
+    }
+
+    if (nft.owner === walletAddress) {
+      setMintError("You can't buy your own NFT!");
+      return;
+    }
+
+    try {
+      // In a real implementation, you would:
+      // 1. Create a Solana transaction to transfer SOL
+      // 2. Wait for confirmation
+      // 3. Then update the database
+      
+      await updateNFTInFirebase(nft.id, {
+        owner: walletAddress,
+        forSale: false,
+        price: null,
+        listedAt: null,
+        lastSoldPrice: nft.price,
+        lastSoldAt: new Date().toISOString(),
+      });
+      
+      playSound('mint');
+      setMintSuccess(`🎉 You bought NFT #${nft.serialNumber} for ${nft.price} SOL!`);
+    } catch (error) {
+      setMintError('Failed to buy NFT');
+      playSound('error');
+    }
   };
 
   const downloadPNG = () => {
@@ -624,9 +774,19 @@ const App = () => {
     setEffect(rand(effects).id);
   };
 
-  const displayedNFTs = viewMode === 'mine' 
-    ? mintedNFTs.filter(nft => nft.owner === walletAddress)
-    : mintedNFTs;
+  // Filter NFTs based on view mode
+  const getFilteredNFTs = () => {
+    switch (viewMode) {
+      case 'mine':
+        return mintedNFTs.filter(nft => nft.owner === walletAddress);
+      case 'sale':
+        return mintedNFTs.filter(nft => nft.forSale);
+      default:
+        return mintedNFTs;
+    }
+  };
+
+  const displayedNFTs = getFilteredNFTs();
 
   const Section = ({ title, children }) => (
     <div style={{ marginBottom: '12px' }}>
@@ -676,10 +836,14 @@ const App = () => {
         .scroll::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.4); border-radius: 3px; }
         .action-btn { padding: 10px 16px; font-family: 'Press Start 2P'; font-size: 8px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
         .action-btn:hover { transform: translateY(-2px); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .pulse { animation: pulse 2s infinite; }
         .social-btn { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); cursor: pointer; transition: all 0.3s; color: #888; text-decoration: none; }
         .social-btn:hover { border-color: #00ff88; color: #00ff88; transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0,255,136,0.3); }
+        .sale-badge { position: absolute; top: 8px; left: 8px; background: linear-gradient(135deg, #ff6b6b, #ee5a5a); padding: 4px 8px; border-radius: 4px; font-family: 'Press Start 2P'; font-size: 7px; color: #fff; }
+        .nft-card { position: relative; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; transition: all 0.3s; }
+        .nft-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,255,136,0.2); }
       `}</style>
 
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -781,14 +945,24 @@ const App = () => {
           </div>
         ) : (
           <div className="panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
               <div style={{ fontFamily: "'Press Start 2P'", fontSize: '12px', color: '#00ff88' }}>🏪 MARKETPLACE</div>
-              {walletAddress && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="action-btn" onClick={() => setViewMode('all')} style={{ background: viewMode === 'all' ? '#00ff88' : '#333', color: viewMode === 'all' ? '#000' : '#fff', padding: '6px 12px', fontSize: '7px' }}>ALL ({mintedNFTs.length})</button>
-                  <button className="action-btn" onClick={() => setViewMode('mine')} style={{ background: viewMode === 'mine' ? '#ab47bc' : '#333', color: '#fff', padding: '6px 12px', fontSize: '7px' }}>MY NFTs ({mintedNFTs.filter(n => n.owner === walletAddress).length})</button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button className="action-btn" onClick={() => setViewMode('all')} 
+                  style={{ background: viewMode === 'all' ? '#00ff88' : '#333', color: viewMode === 'all' ? '#000' : '#fff', padding: '6px 12px', fontSize: '7px' }}>
+                  ALL ({mintedNFTs.length})
+                </button>
+                <button className="action-btn" onClick={() => setViewMode('sale')} 
+                  style={{ background: viewMode === 'sale' ? '#ff6b6b' : '#333', color: '#fff', padding: '6px 12px', fontSize: '7px' }}>
+                  💰 FOR SALE ({mintedNFTs.filter(n => n.forSale).length})
+                </button>
+                {walletAddress && (
+                  <button className="action-btn" onClick={() => setViewMode('mine')} 
+                    style={{ background: viewMode === 'mine' ? '#ab47bc' : '#333', color: '#fff', padding: '6px 12px', fontSize: '7px' }}>
+                    MY NFTs ({mintedNFTs.filter(n => n.owner === walletAddress).length})
+                  </button>
+                )}
+              </div>
             </div>
             
             {isLoading ? (
@@ -799,15 +973,18 @@ const App = () => {
             ) : displayedNFTs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>🖼️</div>
-                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>{viewMode === 'mine' ? 'You have no NFTs yet!' : 'No NFTs minted yet!'}</div>
+                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>
+                  {viewMode === 'mine' ? 'You have no NFTs yet!' : viewMode === 'sale' ? 'No NFTs for sale!' : 'No NFTs minted yet!'}
+                </div>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px' }}>
                 {displayedNFTs.map(nft => (
-                  <div key={nft.id} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '12px', border: `2px solid ${nft.owner === walletAddress ? '#ab47bc' : rarities[nft.rarity].color}` }}>
-                    <img src={nft.image} alt={`NFT #${nft.id}`} style={{ width: '100%', borderRadius: '6px', imageRendering: 'pixelated' }} />
+                  <div key={nft.id} className="nft-card" style={{ border: `2px solid ${nft.owner === walletAddress ? '#ab47bc' : nft.forSale ? '#ff6b6b' : rarities[nft.rarity].color}` }}>
+                    {nft.forSale && <div className="sale-badge">💰 {nft.price} SOL</div>}
+                    <img src={nft.image} alt={`NFT #${nft.serialNumber}`} style={{ width: '100%', borderRadius: '6px', imageRendering: 'pixelated' }} />
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                      <span style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>#{nft.id}</span>
+                      <span style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>#{nft.serialNumber}</span>
                       <RarityBadge rarity={nft.rarity} />
                     </div>
                     <div style={{ fontFamily: "'Press Start 2P'", fontSize: '14px', color: rarities[nft.rarity].color, textAlign: 'center', marginTop: '8px' }}>{nft.score}</div>
@@ -816,6 +993,32 @@ const App = () => {
                       <span style={{ fontSize: '9px', color: nft.owner === walletAddress ? '#ab47bc' : '#888' }}>
                         {nft.owner === walletAddress ? 'YOU' : shortAddress(nft.owner)}
                       </span>
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div style={{ marginTop: '10px' }}>
+                      {nft.owner === walletAddress ? (
+                        // Owner actions
+                        nft.forSale ? (
+                          <button className="action-btn" onClick={() => cancelListing(nft)} 
+                            style={{ width: '100%', background: '#444', color: '#fff', padding: '8px', fontSize: '7px' }}>
+                            ❌ Cancel Listing
+                          </button>
+                        ) : (
+                          <button className="action-btn" onClick={() => { setSelectedNFT(nft); setShowSellModal(true); }} 
+                            style={{ width: '100%', background: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)', color: '#fff', padding: '8px', fontSize: '7px' }}>
+                            💰 Sell NFT
+                          </button>
+                        )
+                      ) : (
+                        // Buyer actions
+                        nft.forSale && (
+                          <button className="action-btn" onClick={() => buyNFT(nft)} 
+                            style={{ width: '100%', background: 'linear-gradient(135deg, #00ff88, #00aa55)', color: '#000', padding: '8px', fontSize: '7px' }}>
+                            🛒 Buy for {nft.price} SOL
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
                 ))}
@@ -834,6 +1037,7 @@ const App = () => {
         {mintError && <div style={{ background: 'rgba(255,0,0,0.2)', border: '2px solid #ff4444', borderRadius: '8px', padding: '12px', marginTop: '15px', textAlign: 'center', fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ff4444' }}>{mintError}</div>}
         {mintSuccess && <div style={{ background: 'rgba(0,255,0,0.2)', border: '2px solid #00ff88', borderRadius: '8px', padding: '12px', marginTop: '15px', textAlign: 'center', fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#00ff88' }}>{mintSuccess}</div>}
 
+        {/* Mint Modal */}
         {showCard && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setShowCard(false)}>
             <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #2a2a4e)', border: '3px solid #ab47bc', borderRadius: '12px', padding: '20px', maxWidth: '340px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
@@ -855,9 +1059,55 @@ const App = () => {
                   <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ff4444' }}>⚠️ ALREADY EXISTS!</div>
                 </div>
               ) : (
-                <button className="action-btn" onClick={mintNFT} style={{ width: '100%', background: 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff', padding: '15px' }}>✨ MINT NFT</button>
+                <button className="action-btn" onClick={mintNFT} disabled={isMinting}
+                  style={{ width: '100%', background: 'linear-gradient(135deg, #ab47bc, #7c4dff)', color: '#fff', padding: '15px' }}>
+                  {isMinting ? <><span className="pulse">⏳</span> Minting...</> : '✨ MINT NFT'}
+                </button>
               )}
               <button className="action-btn" onClick={() => setShowCard(false)} style={{ width: '100%', marginTop: '10px', background: '#333', color: '#fff' }}>❌ CANCEL</button>
+            </div>
+          </div>
+        )}
+
+        {/* Sell Modal */}
+        {showSellModal && selectedNFT && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setShowSellModal(false)}>
+            <div style={{ background: 'linear-gradient(135deg, #1a1a2e, #2a2a4e)', border: '3px solid #ff6b6b', borderRadius: '12px', padding: '20px', maxWidth: '340px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '12px', color: '#ff6b6b', marginBottom: '15px' }}>💰 SELL NFT</div>
+              <img src={selectedNFT.image} alt="NFT" style={{ width: '150px', borderRadius: '8px', imageRendering: 'pixelated', marginBottom: '15px' }} />
+              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px', marginBottom: '15px' }}>#{selectedNFT.serialNumber}</div>
+              
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#888', display: 'block', marginBottom: '8px' }}>Price in SOL:</label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  min="0.01"
+                  value={sellPrice} 
+                  onChange={(e) => setSellPrice(e.target.value)}
+                  placeholder="0.00"
+                  style={{ 
+                    width: '100%', 
+                    padding: '12px', 
+                    borderRadius: '8px', 
+                    border: '2px solid #ff6b6b', 
+                    background: 'rgba(0,0,0,0.5)', 
+                    color: '#fff', 
+                    fontFamily: "'Press Start 2P'", 
+                    fontSize: '14px',
+                    textAlign: 'center'
+                  }} 
+                />
+              </div>
+              
+              <button className="action-btn" onClick={listForSale} 
+                style={{ width: '100%', background: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)', color: '#fff', padding: '15px' }}>
+                📋 LIST FOR SALE
+              </button>
+              <button className="action-btn" onClick={() => { setShowSellModal(false); setSelectedNFT(null); setSellPrice(''); }} 
+                style={{ width: '100%', marginTop: '10px', background: '#333', color: '#fff' }}>
+                ❌ CANCEL
+              </button>
             </div>
           </div>
         )}
