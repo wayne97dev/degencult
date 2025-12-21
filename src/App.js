@@ -795,44 +795,44 @@ const App = () => {
     </div>
   );
 
-  const OptionBtn = ({ active, onClick, children }) => (
-    <button type="button" 
-      onPointerDown={(e) => { e.stopPropagation(); }}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); playSound('select'); }}
-      style={{ 
-        padding: '6px 10px', 
-        background: active ? 'linear-gradient(135deg, #00ff88, #00aa55)' : 'rgba(255,255,255,0.1)', 
-        border: `2px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
-        borderRadius: '4px', 
-        color: active ? '#000' : '#fff', 
-        fontSize: '10px', 
-        fontWeight: '600', 
-        cursor: 'pointer',
-        touchAction: 'manipulation',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-      }}
-    >{children}</button>
-  );
+  const OptionBtn = ({ active, onClick, children }) => {
+    return (
+      <button 
+        type="button" 
+        onPointerUp={() => { onClick(); playSound('select'); }}
+        style={{ 
+          padding: '6px 10px', 
+          background: active ? 'linear-gradient(135deg, #00ff88, #00aa55)' : 'rgba(255,255,255,0.1)', 
+          border: `2px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
+          borderRadius: '4px', 
+          color: active ? '#000' : '#fff', 
+          fontSize: '10px', 
+          fontWeight: '600', 
+          cursor: 'pointer',
+          touchAction: 'manipulation',
+        }}
+      >{children}</button>
+    );
+  };
 
-  const ColorBtn = ({ active, onClick, color }) => (
-    <button type="button" 
-      onPointerDown={(e) => { e.stopPropagation(); }}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); playSound('select'); }}
-      style={{ 
-        width: '28px', 
-        height: '28px', 
-        background: color, 
-        border: `3px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
-        borderRadius: '4px', 
-        cursor: 'pointer', 
-        boxShadow: active ? '0 0 10px rgba(0,255,136,0.5)' : 'none',
-        touchAction: 'manipulation',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-      }}
-    />
-  );
+  const ColorBtn = ({ active, onClick, color }) => {
+    return (
+      <button 
+        type="button" 
+        onPointerUp={() => { onClick(); playSound('select'); }}
+        style={{ 
+          width: '28px', 
+          height: '28px', 
+          background: color, 
+          border: `3px solid ${active ? '#00ff88' : 'rgba(255,255,255,0.2)'}`, 
+          borderRadius: '4px', 
+          cursor: 'pointer', 
+          boxShadow: active ? '0 0 10px rgba(0,255,136,0.5)' : 'none',
+          touchAction: 'manipulation',
+        }}
+      />
+    );
+  };
 
   const RarityBadge = ({ rarity }) => (
     <span style={{ padding: '3px 8px', background: rarities[rarity].color, borderRadius: '4px', fontSize: '9px', fontWeight: 'bold', color: '#fff' }}>{rarities[rarity].name}</span>
@@ -861,6 +861,8 @@ const App = () => {
         .panel { background: rgba(0,255,136,0.03); border: 2px solid rgba(0,255,136,0.2); border-radius: 8px; padding: 12px; }
         .scroll::-webkit-scrollbar { width: 6px; }
         .scroll::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.4); border-radius: 3px; }
+        .scroll button { position: relative; z-index: 100; pointer-events: auto !important; }
+        .scroll * { pointer-events: auto; }
         .action-btn { padding: 10px 16px; font-family: 'Press Start 2P'; font-size: 8px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
         .action-btn:hover { transform: translateY(-2px); }
         .action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -934,7 +936,7 @@ const App = () => {
               </div>
             </div>
 
-            <div className="panel scroll" style={{ flex: 1, minWidth: '300px', maxWidth: '550px', maxHeight: '550px', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+            <div className="panel scroll" style={{ flex: 1, minWidth: '300px', maxWidth: '550px', maxHeight: '550px', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
               <Section title="🎭 PRESETS">
                 {Object.entries(presets).map(([k, v]) => <OptionBtn key={k} onClick={() => applyPreset(k)}>{v.name}</OptionBtn>)}
               </Section>
