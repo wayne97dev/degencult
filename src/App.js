@@ -815,52 +815,109 @@ const App = () => {
       pxRect(ctx, cx - 28, topY - P * 14, 56, P, '#333'); // highlight
     }
     if (hat === 'party') {
-      // Cappello festa
-      const colors = ['#ff3366', '#33ff66', '#3366ff', '#ffff33', '#ff33ff'];
-      for (let i = 0; i < 8; i++) {
-        const w = Math.max(P * 2, 40 - i * 5);
-        pxRect(ctx, cx - w/2, topY - i * P * 5, w, P * 5, colors[i % colors.length]);
+      // 🎉 Cappello festa conico colorato
+      const colors = ['#ff2266', '#ffdd00', '#00cc66', '#2266ff', '#ff22ff'];
+      // Cono principale
+      for (let i = 0; i < 12; i++) {
+        const w = Math.max(P * 3, 50 - i * 4);
+        const color = colors[i % colors.length];
+        pxRect(ctx, cx - w/2, topY - i * P * 3 + P * 5, w, P * 3, color);
       }
-      // Pompon top
-      pxRect(ctx, cx - P * 2, topY - P * 42, P * 4, P * 4, '#ffff00');
-      // Elastico
-      pxRect(ctx, cx - 45, topY + P * 4, P * 2, P * 10, '#333');
-      pxRect(ctx, cx + 40, topY + P * 4, P * 2, P * 10, '#333');
+      // Bordo dorato alla base
+      pxRect(ctx, cx - 28, topY + P * 5, 56, P * 2, '#ffd700');
+      pxRect(ctx, cx - 26, topY + P * 3, 52, P * 2, '#ffaa00');
+      // Pompon in cima
+      pxRect(ctx, cx - P * 3, topY - P * 32, P * 6, P * 4, '#ff4488');
+      pxRect(ctx, cx - P * 2, topY - P * 34, P * 4, P * 2, '#ff6699');
+      pxRect(ctx, cx - P * 2, topY - P * 30, P * 4, P * 2, '#ff2266');
+      // Stelle decorative
+      px(ctx, cx - 15, topY - P * 10, '#fff');
+      px(ctx, cx + 12, topY - P * 18, '#fff');
+      px(ctx, cx - 8, topY - P * 25, '#fff');
     }
     if (hat === 'cat_ears') {
-      // Orecchie da gatto
-      for (let i = 0; i < 6; i++) { 
-        pxRect(ctx, cx - 42 + i * P, topY - P * 3 - i * P * 4, P * 4, P * 4, skinColor); 
-        pxRect(ctx, cx + 30 - i * P, topY - P * 3 - i * P * 4, P * 4, P * 4, skinColor); 
-      }
-      // Interno rosa
-      for (let i = 0; i < 4; i++) { 
-        pxRect(ctx, cx - 38 + i * P, topY - P * 1 - i * P * 4, P * 2, P * 3, '#ffaaaa'); 
-        pxRect(ctx, cx + 32 - i * P, topY - P * 1 - i * P * 4, P * 2, P * 3, '#ffaaaa'); 
-      }
+      // 🐱 Orecchie da gatto realistiche
+      const earColor = skinColor;
+      const innerColor = '#ffaaaa';
+      const darkColor = darken(skinColor, 20);
+      // Orecchio sinistro - triangolo
+      pxRect(ctx, cx - 45, topY - P * 2, P * 14, P * 4, earColor);
+      pxRect(ctx, cx - 43, topY - P * 6, P * 12, P * 4, earColor);
+      pxRect(ctx, cx - 41, topY - P * 10, P * 10, P * 4, earColor);
+      pxRect(ctx, cx - 39, topY - P * 14, P * 8, P * 4, earColor);
+      pxRect(ctx, cx - 37, topY - P * 18, P * 6, P * 4, earColor);
+      pxRect(ctx, cx - 35, topY - P * 22, P * 4, P * 4, earColor);
+      // Interno sinistro
+      pxRect(ctx, cx - 41, topY - P * 2, P * 8, P * 3, innerColor);
+      pxRect(ctx, cx - 39, topY - P * 6, P * 6, P * 4, innerColor);
+      pxRect(ctx, cx - 37, topY - P * 10, P * 4, P * 4, innerColor);
+      // Orecchio destro - triangolo
+      pxRect(ctx, cx + 30, topY - P * 2, P * 14, P * 4, earColor);
+      pxRect(ctx, cx + 30, topY - P * 6, P * 12, P * 4, earColor);
+      pxRect(ctx, cx + 30, topY - P * 10, P * 10, P * 4, earColor);
+      pxRect(ctx, cx + 30, topY - P * 14, P * 8, P * 4, earColor);
+      pxRect(ctx, cx + 32, topY - P * 18, P * 6, P * 4, earColor);
+      pxRect(ctx, cx + 32, topY - P * 22, P * 4, P * 4, earColor);
+      // Interno destro
+      pxRect(ctx, cx + 32, topY - P * 2, P * 8, P * 3, innerColor);
+      pxRect(ctx, cx + 32, topY - P * 6, P * 6, P * 4, innerColor);
+      pxRect(ctx, cx + 34, topY - P * 10, P * 4, P * 4, innerColor);
+      // Contorno scuro
+      pxRect(ctx, cx - 46, topY - P * 2, P, P * 4, darkColor);
+      pxRect(ctx, cx + 43, topY - P * 2, P, P * 4, darkColor);
     }
     if (hat === 'bunny_ears') {
-      // Orecchie da coniglio
-      pxRect(ctx, cx - 35, topY - P * 35, P * 8, P * 35, '#fff');
-      pxRect(ctx, cx + 25, topY - P * 35, P * 8, P * 35, '#fff');
-      // Interno rosa
-      pxRect(ctx, cx - 32, topY - P * 30, P * 4, P * 25, '#ffcccc');
-      pxRect(ctx, cx + 28, topY - P * 30, P * 4, P * 25, '#ffcccc');
-      // Punte arrotondate
-      pxRect(ctx, cx - 33, topY - P * 38, P * 6, P * 4, '#fff');
-      pxRect(ctx, cx + 27, topY - P * 38, P * 6, P * 4, '#fff');
+      // 🐰 Orecchie da coniglio lunghe e carine
+      const earW = P * 5;
+      // Orecchio sinistro - lungo e arrotondato
+      pxRect(ctx, cx - 35, topY - P * 8, earW + P * 2, P * 10, '#fff');
+      pxRect(ctx, cx - 34, topY - P * 18, earW, P * 10, '#fff');
+      pxRect(ctx, cx - 33, topY - P * 28, earW - P, P * 10, '#fff');
+      pxRect(ctx, cx - 32, topY - P * 36, earW - P * 2, P * 8, '#fff');
+      pxRect(ctx, cx - 31, topY - P * 40, earW - P * 2, P * 4, '#fff');
+      // Interno sinistro rosa
+      pxRect(ctx, cx - 33, topY - P * 6, P * 3, P * 6, '#ffbbcc');
+      pxRect(ctx, cx - 32, topY - P * 14, P * 3, P * 8, '#ffbbcc');
+      pxRect(ctx, cx - 31, topY - P * 24, P * 2, P * 10, '#ffbbcc');
+      pxRect(ctx, cx - 31, topY - P * 32, P * 2, P * 8, '#ffbbcc');
+      // Orecchio destro
+      pxRect(ctx, cx + 28, topY - P * 8, earW + P * 2, P * 10, '#fff');
+      pxRect(ctx, cx + 29, topY - P * 18, earW, P * 10, '#fff');
+      pxRect(ctx, cx + 30, topY - P * 28, earW - P, P * 10, '#fff');
+      pxRect(ctx, cx + 30, topY - P * 36, earW - P * 2, P * 8, '#fff');
+      pxRect(ctx, cx + 30, topY - P * 40, earW - P * 2, P * 4, '#fff');
+      // Interno destro rosa
+      pxRect(ctx, cx + 30, topY - P * 6, P * 3, P * 6, '#ffbbcc');
+      pxRect(ctx, cx + 30, topY - P * 14, P * 3, P * 8, '#ffbbcc');
+      pxRect(ctx, cx + 31, topY - P * 24, P * 2, P * 10, '#ffbbcc');
+      pxRect(ctx, cx + 31, topY - P * 32, P * 2, P * 8, '#ffbbcc');
+      // Ombra leggera
+      pxRect(ctx, cx - 36, topY - P * 6, P, P * 8, '#eee');
+      pxRect(ctx, cx + 35, topY - P * 6, P, P * 8, '#eee');
     }
     if (hat === 'antenna') {
-      // Antenna aliena
-      pxRect(ctx, cx - P, topY - P * 30, P * 2, P * 25, '#888');
-      // Pallina luminosa
-      ctx.shadowColor = '#00ff00';
-      ctx.shadowBlur = 20;
-      pxRect(ctx, cx - P * 3, topY - P * 35, P * 6, P * 6, '#00ff00');
+      // 👽 Antenna aliena con cerchietto
+      // Cerchietto sulla testa
+      pxRect(ctx, cx - 40, topY + P * 2, 80, P * 3, '#444');
+      pxRect(ctx, cx - 38, topY + P, 76, P, '#666');
+      // Antenna sinistra
+      pxRect(ctx, cx - 25, topY - P * 25, P * 2, P * 27, '#555');
+      pxRect(ctx, cx - 26, topY - P * 20, P, P * 15, '#666'); // highlight
+      // Pallina sinistra con glow
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = 15;
+      pxRect(ctx, cx - 29, topY - P * 30, P * 8, P * 6, '#00ff88');
+      pxRect(ctx, cx - 28, topY - P * 31, P * 6, P * 2, '#88ffbb');
       ctx.shadowBlur = 0;
-      // Seconda antenna più corta
-      pxRect(ctx, cx + 20, topY - P * 20, P * 2, P * 15, '#888');
-      pxRect(ctx, cx + 18, topY - P * 24, P * 5, P * 5, '#00ffff');
+      // Antenna destra
+      pxRect(ctx, cx + 22, topY - P * 25, P * 2, P * 27, '#555');
+      pxRect(ctx, cx + 24, topY - P * 20, P, P * 15, '#666'); // highlight
+      // Pallina destra con glow diverso
+      ctx.shadowColor = '#ff00ff';
+      ctx.shadowBlur = 15;
+      pxRect(ctx, cx + 19, topY - P * 30, P * 8, P * 6, '#ff44ff');
+      pxRect(ctx, cx + 20, topY - P * 31, P * 6, P * 2, '#ff88ff');
+      ctx.shadowBlur = 0;
     }
 
     // ═══════════════════════════════════════════════════════════════
