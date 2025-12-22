@@ -36,6 +36,10 @@ const App = () => {
   const [showCard, setShowCard] = useState(false);
   const [mintPreviewImage, setMintPreviewImage] = useState(null);
   const [showMarketplace, setShowMarketplace] = useState(false);
+  const [showBotDashboard, setShowBotDashboard] = useState(false);
+  const [botBalance, setBotBalance] = useState(null);
+  const [botTransactions, setBotTransactions] = useState([]);
+  const [botLoading, setBotLoading] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
   const [selectedNFT, setSelectedNFT] = useState(null);
   const [sellPrice, setSellPrice] = useState('');
@@ -62,6 +66,9 @@ const App = () => {
     FEE_WALLET: "YOUR_SOLANA_WALLET_HERE", // Il tuo wallet per ricevere fee e mint
     FEE_PERCENT: 2.5, // Percentuale fee sulle vendite (2.5%)
     MINT_PRICE: 0.05, // Costo per mintare un NFT in SOL
+    // 🤖 BOT CONFIG
+    BOT_WALLET: "YOUR_BOT_WALLET_HERE", // Wallet del bot MM (stesso di FEE_WALLET)
+    TOKEN_ADDRESS: "YOUR_TOKEN_ADDRESS_HERE", // Indirizzo del tuo token
   };
   // ═══════════════════════════════════════════════════════════════
 
@@ -69,6 +76,112 @@ const App = () => {
   // Per RPC dedicato e più veloce, registrati gratis su helius.dev
   const SOLANA_RPC = "https://solana.publicnode.com";
   const connection = new Connection(SOLANA_RPC, 'confirmed');
+
+  // ═══════════════════════════════════════════════════════════════
+  // 🤖 BOT DASHBOARD FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════
+  
+  // Fetch bot wallet balance
+  const fetchBotBalance = async () => {
+    if (!CONFIG.BOT_WALLET || CONFIG.BOT_WALLET === "YOUR_BOT_WALLET_HERE") return;
+    
+    try {
+      const pubkey = new PublicKey(CONFIG.BOT_WALLET);
+      const balance = await connection.getBalance(pubkey);
+      setBotBalance(balance / LAMPORTS_PER_SOL);
+    } catch (error) {
+      console.error('Error fetching bot balance:', error);
+    }
+  };
+
+  // Fetch recent transactions
+  const fetchBotTransactions = async () => {
+    if (!CONFIG.BOT_WALLET || CONFIG.BOT_WALLET === "YOUR_BOT_WALLET_HERE") return;
+    
+    setBotLoading(true);
+    try {
+      const pubkey = new PublicKey(CONFIG.BOT_WALLET);
+      const signatures = await connection.getSignaturesForAddress(pubkey, { limit: 20 });
+      
+      const txDetails = await Promise.all(
+        signatures.slice(0, 10).map(async (sig) => {
+          try {
+            const tx = await connection.getParsedTransaction(sig.signature, {
+              maxSupportedTransactionVersion: 0
+            });
+            
+            // Determine if it's a buy or sell based on SOL movement
+            let type = 'UNKNOWN';
+            let amount = 0;
+            
+            if (tx?.meta) {
+              const preBalance = tx.meta.preBalances[0] || 0;
+              const postBalance = tx.meta.postBalances[0] || 0;
+              const diff = (postBalance - preBalance) / LAMPORTS_PER_SOL;
+              
+              if (diff > 0.001) {
+                type = 'SELL';
+                amount = Math.abs(diff);
+              } else if (diff < -0.001) {
+                type = 'BUY';
+                amount = Math.abs(diff);
+              } else {
+                type = 'TRANSFER';
+                amount = Math.abs(diff);
+              }
+            }
+            
+            return {
+              signature: sig.signature,
+              type,
+              amount: amount.toFixed(4),
+              time: sig.blockTime ? new Date(sig.blockTime * 1000) : new Date(),
+              status: sig.err ? 'FAILED' : 'SUCCESS'
+            };
+          } catch (e) {
+            return null;
+          }
+        })
+      );
+      
+      setBotTransactions(txDetails.filter(tx => tx !== null));
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+    setBotLoading(false);
+  };
+
+  // Load bot data when dashboard opens
+  useEffect(() => {
+    if (showBotDashboard) {
+      fetchBotBalance();
+      fetchBotTransactions();
+    }
+  }, [showBotDashboard]);
+
+  // Auto-refresh bot data every 30 seconds
+  useEffect(() => {
+    if (!showBotDashboard) return;
+    
+    const interval = setInterval(() => {
+      fetchBotBalance();
+      fetchBotTransactions();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [showBotDashboard]);
+
+  // Format time ago
+  const timeAgo = (date) => {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
 
   // Wallet State
   const [walletAddress, setWalletAddress] = useState(null);
@@ -1020,12 +1133,13 @@ const App = () => {
         </div>
         {walletError && <div style={{ textAlign: 'center', color: '#ff4444', fontSize: '10px', marginBottom: '10px' }}>{walletError}</div>}
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
-          <button className="action-btn" onClick={() => setShowMarketplace(false)} style={{ background: !showMarketplace ? '#00ff88' : '#333', color: !showMarketplace ? '#000' : '#fff' }}>🎨 CREATE</button>
-          <button className="action-btn" onClick={() => setShowMarketplace(true)} style={{ background: showMarketplace ? '#00ff88' : '#333', color: showMarketplace ? '#000' : '#fff' }}>🏪 MARKETPLACE ({mintedNFTs.length})</button>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
+          <button className="action-btn" onClick={() => { setShowMarketplace(false); setShowBotDashboard(false); }} style={{ background: !showMarketplace && !showBotDashboard ? '#00ff88' : '#333', color: !showMarketplace && !showBotDashboard ? '#000' : '#fff' }}>🎨 CREATE</button>
+          <button className="action-btn" onClick={() => { setShowMarketplace(true); setShowBotDashboard(false); }} style={{ background: showMarketplace ? '#00ff88' : '#333', color: showMarketplace ? '#000' : '#fff' }}>🏪 MARKETPLACE ({mintedNFTs.length})</button>
+          <button className="action-btn" onClick={() => { setShowMarketplace(false); setShowBotDashboard(true); }} style={{ background: showBotDashboard ? '#ff6b6b' : '#333', color: showBotDashboard ? '#fff' : '#fff' }}>🤖 BOT</button>
         </div>
 
-        {!showMarketplace ? (
+        {!showMarketplace && !showBotDashboard ? (
           <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div className="float">
@@ -1100,7 +1214,7 @@ const App = () => {
               </Section>
             </div>
           </div>
-        ) : (
+        ) : showMarketplace ? (
           <div className="panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
               <div style={{ fontFamily: "'Press Start 2P'", fontSize: '12px', color: '#00ff88' }}>🏪 MARKETPLACE</div>
@@ -1182,9 +1296,125 @@ const App = () => {
               </div>
             )}
           </div>
+        ) : (
+          /* BOT DASHBOARD */
+          <div className="panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ fontFamily: "'Press Start 2P'", fontSize: '12px', color: '#ff6b6b' }}>🤖 MM BOT TREASURY</div>
+              <button 
+                className="action-btn" 
+                onClick={() => { fetchBotBalance(); fetchBotTransactions(); }}
+                style={{ background: '#333', color: '#fff', padding: '6px 12px', fontSize: '7px' }}
+              >
+                🔄 REFRESH
+              </button>
+            </div>
+
+            {CONFIG.BOT_WALLET === "YOUR_BOT_WALLET_HERE" ? (
+              <div style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                <div style={{ fontSize: '40px', marginBottom: '15px' }}>⚙️</div>
+                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px' }}>Configure BOT_WALLET in code</div>
+              </div>
+            ) : (
+              <>
+                {/* Stats Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+                  <div style={{ background: 'rgba(0,255,136,0.1)', border: '2px solid #00ff88', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#888', marginBottom: '8px' }}>💰 BALANCE</div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '16px', color: '#00ff88' }}>
+                      {botBalance !== null ? `${botBalance.toFixed(4)}` : '...'} 
+                    </div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#888', marginTop: '4px' }}>SOL</div>
+                  </div>
+                  
+                  <div style={{ background: 'rgba(255,107,107,0.1)', border: '2px solid #ff6b6b', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#888', marginBottom: '8px' }}>📊 TRADES</div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '16px', color: '#ff6b6b' }}>
+                      {botTransactions.length}
+                    </div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#888', marginTop: '4px' }}>RECENT</div>
+                  </div>
+                  
+                  <div style={{ background: 'rgba(171,71,188,0.1)', border: '2px solid #ab47bc', borderRadius: '8px', padding: '15px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#888', marginBottom: '8px' }}>🔗 WALLET</div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#ab47bc', wordBreak: 'break-all' }}>
+                      {CONFIG.BOT_WALLET.slice(0, 4)}...{CONFIG.BOT_WALLET.slice(-4)}
+                    </div>
+                    <a 
+                      href={`https://solscan.io/account/${CONFIG.BOT_WALLET}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ fontFamily: "'Press Start 2P'", fontSize: '6px', color: '#00ff88', marginTop: '4px', display: 'block' }}
+                    >
+                      VIEW ON SOLSCAN ↗
+                    </a>
+                  </div>
+                </div>
+
+                {/* Recent Activity */}
+                <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px', color: '#fff', marginBottom: '15px' }}>📜 RECENT ACTIVITY</div>
+                
+                {botLoading ? (
+                  <div style={{ textAlign: 'center', padding: '30px' }}>
+                    <div className="pulse" style={{ fontSize: '30px' }}>⏳</div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', marginTop: '10px' }}>Loading transactions...</div>
+                  </div>
+                ) : botTransactions.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '30px', opacity: 0.5 }}>
+                    <div style={{ fontSize: '30px', marginBottom: '10px' }}>📭</div>
+                    <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px' }}>No recent transactions</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                    {botTransactions.map((tx, index) => (
+                      <div 
+                        key={tx.signature} 
+                        style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          background: 'rgba(0,0,0,0.3)',
+                          borderRadius: '6px',
+                          padding: '10px 12px',
+                          borderLeft: `3px solid ${tx.type === 'BUY' ? '#00ff88' : tx.type === 'SELL' ? '#ff6b6b' : '#888'}`
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '16px' }}>
+                            {tx.type === 'BUY' ? '🟢' : tx.type === 'SELL' ? '🔴' : '⚪'}
+                          </span>
+                          <div>
+                            <div style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', color: tx.type === 'BUY' ? '#00ff88' : tx.type === 'SELL' ? '#ff6b6b' : '#888' }}>
+                              {tx.type}
+                            </div>
+                            <div style={{ fontFamily: "'Press Start 2P'", fontSize: '10px', color: '#fff', marginTop: '2px' }}>
+                              {tx.amount} SOL
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', color: '#888' }}>
+                            {timeAgo(tx.time)}
+                          </div>
+                          <a 
+                            href={`https://solscan.io/tx/${tx.signature}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontFamily: "'Press Start 2P'", fontSize: '6px', color: '#00ff88' }}
+                          >
+                            TX ↗
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         )}
 
-        {generatedLore && !showMarketplace && (
+        {generatedLore && !showMarketplace && !showBotDashboard && (
           <div className="panel" style={{ marginTop: '15px', textAlign: 'center' }}>
             <pre style={{ fontFamily: "'Press Start 2P'", fontSize: '8px', whiteSpace: 'pre-wrap', lineHeight: '1.8', color: '#aaa' }}>{generatedLore}</pre>
             <button className="action-btn" onClick={() => navigator.clipboard.writeText(generatedLore)} style={{ marginTop: '10px', background: '#333', color: '#00ff88', border: '1px solid #00ff88' }}>📋 COPY</button>
