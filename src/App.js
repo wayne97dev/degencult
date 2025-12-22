@@ -717,27 +717,376 @@ const App = () => {
     if (accessory === 'scar') for (let i = 0; i < 5; i++) px(ctx, cx + 25 + i * P, eyeY - P * 2 + i * P, '#883333');
 
     const topY = charY - 55;
-    if (hat === 'cap') { pxRect(ctx, cx - 40, topY, 80, P * 5, '#222'); pxRect(ctx, cx - 35, topY - P * 4, 70, P * 4, '#222'); pxRect(ctx, cx - 55, topY + P * 2, P * 7, P * 4, '#222'); }
-    if (hat === 'crown') { pxRect(ctx, cx - 35, topY, 70, P * 4, '#ffd700'); [-30, -15, 0, 15, 30].forEach((x, i) => pxRect(ctx, cx + x - P, topY - (i % 2 === 0 ? P * 5 : P * 7), P * 3, i % 2 === 0 ? P * 5 : P * 7, '#ffd700')); }
-    if (hat === 'halo') for (let angle = 0; angle < Math.PI * 2; angle += 0.35) pxRect(ctx, cx + Math.cos(angle) * 40 - P, topY - 25 + Math.sin(angle) * 10 - P, P * 2, P * 2, '#ffd700');
-    if (hat === 'horns') for (let i = 0; i < 7; i++) { pxRect(ctx, cx - 50 - i * P, topY - i * P * 4, P * 3, P * 4, '#aa2222'); pxRect(ctx, cx + 42 + i * P, topY - i * P * 4, P * 3, P * 4, '#aa2222'); }
-    if (hat === 'wizard') { for (let i = 0; i < 12; i++) pxRect(ctx, cx - Math.max(P, 30 - i * 5)/2, topY - i * P * 4, Math.max(P * 2, 60 - i * 10), P * 4, '#4400aa'); pxRect(ctx, cx - 40, topY + P, 80, P * 2, '#ffd700'); }
-    if (hat === 'party') for (let i = 0; i < 10; i++) pxRect(ctx, cx - Math.max(P, 22 - i * 4)/2, topY - i * P * 4, Math.max(P * 2, 45 - i * 8), P * 4, ['#ff3366', '#33ff66', '#3366ff', '#ffff33'][i % 4]);
-    if (hat === 'cat_ears') for (let i = 0; i < 5; i++) { pxRect(ctx, cx - 40 + i * P, topY - P * 5 - i * P * 3, P * 3, P * 3, skinColor); pxRect(ctx, cx + 28 - i * P, topY - P * 5 - i * P * 3, P * 3, P * 3, skinColor); }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 🎩 CAPPELLI - TUTTI
+    // ═══════════════════════════════════════════════════════════════
+    if (hat === 'cap') { 
+      // Cappellino baseball
+      pxRect(ctx, cx - 40, topY + P, 80, P * 4, '#222'); 
+      pxRect(ctx, cx - 35, topY - P * 3, 70, P * 4, '#222'); 
+      pxRect(ctx, cx - 55, topY + P * 2, P * 8, P * 3, '#222'); // visiera
+      pxRect(ctx, cx - 35, topY - P * 2, P * 2, P, '#ff0000'); // dettaglio
+    }
+    if (hat === 'crown') { 
+      // Corona dorata
+      pxRect(ctx, cx - 35, topY, 70, P * 5, '#ffd700'); 
+      pxRect(ctx, cx - 35, topY + P, 70, P * 2, '#ffaa00'); // ombra
+      [-28, -14, 0, 14, 28].forEach((x, i) => {
+        const h = i % 2 === 0 ? P * 6 : P * 8;
+        pxRect(ctx, cx + x - P, topY - h + P, P * 3, h, '#ffd700');
+        px(ctx, cx + x, topY - h + P, '#ff0000'); // gemme
+      });
+    }
+    if (hat === 'halo') {
+      // Aureola angelica
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = P * 2;
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.ellipse(cx, topY - P * 6, 35, 10, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    if (hat === 'horns') {
+      // Corna demoniache
+      for (let i = 0; i < 6; i++) { 
+        const hornColor = i < 3 ? '#cc2222' : '#aa1111';
+        pxRect(ctx, cx - 45 - i * P * 1.5, topY - i * P * 5, P * 4, P * 5, hornColor); 
+        pxRect(ctx, cx + 35 + i * P * 1.5, topY - i * P * 5, P * 4, P * 5, hornColor); 
+      }
+      // Punte
+      pxRect(ctx, cx - 53, topY - P * 32, P * 2, P * 3, '#ff4444');
+      pxRect(ctx, cx + 47, topY - P * 32, P * 2, P * 3, '#ff4444');
+    }
+    if (hat === 'headphones') {
+      // Cuffie
+      pxRect(ctx, cx - 50, topY - P * 2, P * 4, P * 12, '#333'); // sinistra
+      pxRect(ctx, cx + 42, topY - P * 2, P * 4, P * 12, '#333'); // destra
+      pxRect(ctx, cx - 52, topY + P * 2, P * 8, P * 8, '#444'); // padiglione sx
+      pxRect(ctx, cx + 40, topY + P * 2, P * 8, P * 8, '#444'); // padiglione dx
+      pxRect(ctx, cx - 54, topY + P * 4, P * 3, P * 4, '#00ff88'); // led sx
+      pxRect(ctx, cx + 47, topY + P * 4, P * 3, P * 4, '#00ff88'); // led dx
+      // Archetto
+      for (let i = 0; i < 10; i++) {
+        const x = cx - 40 + i * 8;
+        const y = topY - P * 4 - Math.sin(i / 9 * Math.PI) * 15;
+        pxRect(ctx, x, y, P * 2, P * 2, '#333');
+      }
+    }
+    if (hat === 'wizard') { 
+      // Cappello da mago
+      for (let i = 0; i < 10; i++) {
+        const w = Math.max(P * 2, 55 - i * 5);
+        pxRect(ctx, cx - w/2, topY - i * P * 5, w, P * 5, '#3311aa');
+        if (i % 2 === 0) pxRect(ctx, cx - w/2 + P, topY - i * P * 5, w - P * 2, P, '#4422cc'); // highlight
+      }
+      pxRect(ctx, cx - 45, topY + P, 90, P * 3, '#3311aa'); // bordo
+      pxRect(ctx, cx - 45, topY + P, 90, P, '#ffd700'); // striscia oro
+      // Stelle
+      px(ctx, cx + 15, topY - P * 20, '#ffff00');
+      px(ctx, cx - 10, topY - P * 30, '#ffff00');
+    }
+    if (hat === 'cowboy') {
+      // Cappello cowboy
+      pxRect(ctx, cx - 55, topY + P * 2, 110, P * 3, '#8B4513'); // tesa larga
+      pxRect(ctx, cx - 35, topY - P * 6, 70, P * 8, '#8B4513'); // cupola
+      pxRect(ctx, cx - 30, topY - P * 8, 60, P * 3, '#8B4513'); // top
+      pxRect(ctx, cx - 30, topY - P * 2, 60, P * 2, '#654321'); // fascia
+      // Piega caratteristica
+      pxRect(ctx, cx - 15, topY - P * 10, 30, P * 2, '#9B5523');
+    }
+    if (hat === 'beanie') {
+      // Berretto di lana
+      for (let i = 0; i < 6; i++) {
+        const w = 70 - i * 5;
+        pxRect(ctx, cx - w/2, topY - i * P * 3, w, P * 3, i % 2 === 0 ? '#cc3333' : '#222');
+      }
+      // Pompon
+      pxRect(ctx, cx - P * 3, topY - P * 22, P * 6, P * 5, '#cc3333');
+      pxRect(ctx, cx - P * 2, topY - P * 24, P * 4, P * 3, '#cc3333');
+    }
+    if (hat === 'tophat') {
+      // Cilindro elegante
+      pxRect(ctx, cx - 50, topY + P, 100, P * 3, '#111'); // tesa
+      pxRect(ctx, cx - 30, topY - P * 15, 60, P * 16, '#111'); // cilindro
+      pxRect(ctx, cx - 30, topY - P * 12, 60, P * 2, '#cc0000'); // nastro rosso
+      pxRect(ctx, cx - 28, topY - P * 14, 56, P, '#333'); // highlight
+    }
+    if (hat === 'party') {
+      // Cappello festa
+      const colors = ['#ff3366', '#33ff66', '#3366ff', '#ffff33', '#ff33ff'];
+      for (let i = 0; i < 8; i++) {
+        const w = Math.max(P * 2, 40 - i * 5);
+        pxRect(ctx, cx - w/2, topY - i * P * 5, w, P * 5, colors[i % colors.length]);
+      }
+      // Pompon top
+      pxRect(ctx, cx - P * 2, topY - P * 42, P * 4, P * 4, '#ffff00');
+      // Elastico
+      pxRect(ctx, cx - 45, topY + P * 4, P * 2, P * 10, '#333');
+      pxRect(ctx, cx + 40, topY + P * 4, P * 2, P * 10, '#333');
+    }
+    if (hat === 'cat_ears') {
+      // Orecchie da gatto
+      for (let i = 0; i < 6; i++) { 
+        pxRect(ctx, cx - 42 + i * P, topY - P * 3 - i * P * 4, P * 4, P * 4, skinColor); 
+        pxRect(ctx, cx + 30 - i * P, topY - P * 3 - i * P * 4, P * 4, P * 4, skinColor); 
+      }
+      // Interno rosa
+      for (let i = 0; i < 4; i++) { 
+        pxRect(ctx, cx - 38 + i * P, topY - P * 1 - i * P * 4, P * 2, P * 3, '#ffaaaa'); 
+        pxRect(ctx, cx + 32 - i * P, topY - P * 1 - i * P * 4, P * 2, P * 3, '#ffaaaa'); 
+      }
+    }
+    if (hat === 'bunny_ears') {
+      // Orecchie da coniglio
+      pxRect(ctx, cx - 35, topY - P * 35, P * 8, P * 35, '#fff');
+      pxRect(ctx, cx + 25, topY - P * 35, P * 8, P * 35, '#fff');
+      // Interno rosa
+      pxRect(ctx, cx - 32, topY - P * 30, P * 4, P * 25, '#ffcccc');
+      pxRect(ctx, cx + 28, topY - P * 30, P * 4, P * 25, '#ffcccc');
+      // Punte arrotondate
+      pxRect(ctx, cx - 33, topY - P * 38, P * 6, P * 4, '#fff');
+      pxRect(ctx, cx + 27, topY - P * 38, P * 6, P * 4, '#fff');
+    }
+    if (hat === 'antenna') {
+      // Antenna aliena
+      pxRect(ctx, cx - P, topY - P * 30, P * 2, P * 25, '#888');
+      // Pallina luminosa
+      ctx.shadowColor = '#00ff00';
+      ctx.shadowBlur = 20;
+      pxRect(ctx, cx - P * 3, topY - P * 35, P * 6, P * 6, '#00ff00');
+      ctx.shadowBlur = 0;
+      // Seconda antenna più corta
+      pxRect(ctx, cx + 20, topY - P * 20, P * 2, P * 15, '#888');
+      pxRect(ctx, cx + 18, topY - P * 24, P * 5, P * 5, '#00ffff');
+    }
 
-    const ix = cx + 60, iy = charY + 25;
-    if (item === 'joint') { pxRect(ctx, cx + 30, charY + 12, P * 12, P * 2, '#f5f5dc'); pxRect(ctx, cx + 72, charY + 10, P * 3, P * 3, '#ff4500'); }
-    if (item === 'chain') { for (let i = 0; i < 16; i++) pxRect(ctx, cx - 45 + i * 6, charY + 45 + Math.sin(i * 0.5) * 8, P * 2, P * 2, '#ffd700'); pxRect(ctx, cx - P * 4, charY + 60, P * 8, P * 8, '#ffd700'); }
-    if (item === 'coffee') { pxRect(ctx, ix, iy, P * 6, P * 10, '#fff'); pxRect(ctx, ix + P, iy + P, P * 4, P * 4, '#4a2c00'); }
-    if (item === 'sword') { pxRect(ctx, ix, iy - P * 15, P * 2, P * 25, '#aaa'); pxRect(ctx, ix - P * 2, iy + P * 6, P * 6, P * 2, '#8b4513'); }
-    if (item === 'controller') { pxRect(ctx, ix, iy, P * 10, P * 6, '#333'); px(ctx, ix + P * 2, iy + P * 2, '#ff0000'); }
+    // ═══════════════════════════════════════════════════════════════
+    // 🎒 ITEMS - TUTTI
+    // ═══════════════════════════════════════════════════════════════
+    const ix = cx + 55, iy = charY + 20;
+    
+    if (item === 'joint') { 
+      // Sigaretta/Joint
+      pxRect(ctx, cx + 28, charY + 14, P * 14, P * 3, '#f5f5dc'); 
+      pxRect(ctx, cx + 28, charY + 15, P * 3, P, '#fff'); // filtro
+      // Fumo animato
+      const smokeOffset = animFrame % 20;
+      ctx.globalAlpha = 0.5;
+      pxRect(ctx, cx + 78, charY + 8 - smokeOffset, P * 3, P * 2, '#aaa');
+      pxRect(ctx, cx + 82, charY + 4 - smokeOffset, P * 2, P * 2, '#ccc');
+      ctx.globalAlpha = 1;
+      pxRect(ctx, cx + 75, charY + 12, P * 4, P * 4, '#ff4500'); // brace
+    }
+    if (item === 'chain') { 
+      // Collana con ciondolo
+      for (let i = 0; i < 14; i++) {
+        const x = cx - 35 + i * 5;
+        const y = charY + 42 + Math.sin(i * 0.5) * 6;
+        pxRect(ctx, x, y, P * 3, P * 3, '#ffd700');
+        pxRect(ctx, x + P, y + P, P, P, '#ffaa00'); // ombra
+      }
+      // Ciondolo grande
+      pxRect(ctx, cx - P * 5, charY + 55, P * 10, P * 10, '#ffd700');
+      pxRect(ctx, cx - P * 3, charY + 57, P * 6, P * 6, '#00ff88'); // gemma
+    }
+    if (item === 'money') {
+      // Mazzetta di soldi
+      pxRect(ctx, ix - P * 2, iy, P * 14, P * 8, '#228822');
+      pxRect(ctx, ix, iy + P, P * 10, P * 6, '#33aa33');
+      pxRect(ctx, ix + P * 2, iy + P * 2, P * 6, P * 4, '#44cc44');
+      // Simbolo $
+      pxRect(ctx, ix + P * 4, iy + P * 3, P * 2, P * 2, '#fff');
+    }
+    if (item === 'coffee') { 
+      // Tazza di caffè
+      pxRect(ctx, ix, iy, P * 8, P * 12, '#fff');
+      pxRect(ctx, ix + P, iy + P, P * 6, P * 6, '#4a2c00'); // caffè
+      pxRect(ctx, ix + P * 8, iy + P * 3, P * 3, P * 6, '#fff'); // manico
+      // Vapore
+      ctx.globalAlpha = 0.4;
+      const steamY = animFrame % 10;
+      pxRect(ctx, ix + P * 2, iy - P * 3 - steamY, P * 2, P * 2, '#fff');
+      pxRect(ctx, ix + P * 5, iy - P * 5 - steamY, P * 2, P * 2, '#fff');
+      ctx.globalAlpha = 1;
+    }
+    if (item === 'phone') {
+      // Smartphone
+      pxRect(ctx, ix, iy, P * 7, P * 12, '#222');
+      pxRect(ctx, ix + P, iy + P, P * 5, P * 9, '#4488ff'); // schermo
+      pxRect(ctx, ix + P * 2, iy + P * 10, P * 3, P, '#333'); // tasto
+    }
+    if (item === 'sword') { 
+      // Spada
+      pxRect(ctx, ix + P * 2, iy - P * 20, P * 3, P * 30, '#ccc'); // lama
+      pxRect(ctx, ix + P * 3, iy - P * 18, P, P * 26, '#fff'); // highlight
+      pxRect(ctx, ix - P, iy + P * 8, P * 9, P * 3, '#8b4513'); // guardia
+      pxRect(ctx, ix + P, iy + P * 11, P * 5, P * 8, '#654321'); // impugnatura
+      pxRect(ctx, ix + P * 2, iy + P * 19, P * 3, P * 3, '#ffd700'); // pomolo
+    }
+    if (item === 'rose') {
+      // Rosa
+      pxRect(ctx, ix + P * 2, iy, P * 2, P * 15, '#228822'); // stelo
+      // Petali
+      pxRect(ctx, ix, iy - P * 5, P * 6, P * 5, '#ff3366');
+      pxRect(ctx, ix - P, iy - P * 3, P * 3, P * 4, '#ff3366');
+      pxRect(ctx, ix + P * 4, iy - P * 3, P * 3, P * 4, '#ff3366');
+      pxRect(ctx, ix + P, iy - P * 7, P * 4, P * 3, '#ff5588');
+      // Foglia
+      pxRect(ctx, ix + P * 4, iy + P * 5, P * 4, P * 2, '#33aa33');
+    }
+    if (item === 'pizza') {
+      // Fetta di pizza
+      pxRect(ctx, ix, iy, P * 12, P * 3, '#ffcc66'); // crosta
+      for (let i = 0; i < 4; i++) {
+        pxRect(ctx, ix + i * P * 2, iy + P * 3 + i * P, P * 12 - i * P * 4, P, '#ffcc66');
+      }
+      // Formaggio
+      pxRect(ctx, ix + P * 2, iy + P, P * 8, P * 5, '#ffdd44');
+      // Pepperoni
+      pxRect(ctx, ix + P * 3, iy + P * 2, P * 2, P * 2, '#cc3333');
+      pxRect(ctx, ix + P * 6, iy + P * 3, P * 2, P * 2, '#cc3333');
+    }
+    if (item === 'controller') { 
+      // Controller gaming
+      pxRect(ctx, ix, iy, P * 14, P * 8, '#333');
+      pxRect(ctx, ix + P, iy + P, P * 4, P * 4, '#222'); // d-pad area
+      pxRect(ctx, ix + P * 2, iy + P * 2, P * 2, P * 2, '#444'); // d-pad
+      // Pulsanti colorati
+      px(ctx, ix + P * 9, iy + P * 2, '#ff0000');
+      px(ctx, ix + P * 11, iy + P * 2, '#0000ff');
+      px(ctx, ix + P * 10, iy + P, '#ffff00');
+      px(ctx, ix + P * 10, iy + P * 3, '#00ff00');
+      // Stick analogici
+      pxRect(ctx, ix + P * 4, iy + P * 5, P * 2, P * 2, '#666');
+      pxRect(ctx, ix + P * 8, iy + P * 5, P * 2, P * 2, '#666');
+    }
 
-    if (effect === 'sparkle') for (let i = 0; i < 15; i++) pxRect(ctx, (animFrame * 7 + i * 47) % W, (i * 31) % H, P * 2, P * 2, '#fff');
-    if (effect === 'hearts') for (let i = 0; i < 8; i++) px(ctx, (animFrame * 3 + i * 50) % W, (H - (animFrame * 2 + i * 40) % H), '#ff4488');
-    if (effect === 'fire') for (let i = 0; i < 15; i++) pxRect(ctx, cx - 50 + (i * 17) % 100, H - 20 - (animFrame * 3 + i * 13) % 80, P * 3, P * 4, ['#ff0000', '#ff4400', '#ffaa00'][i % 3]);
-    if (effect === 'money_rain') for (let i = 0; i < 12; i++) pxRect(ctx, (i * 37) % W, (animFrame * 4 + i * 30) % H, P * 3, P * 2, '#44aa44');
-    if (effect === 'lightning' && animFrame % 10 < 3) pxRect(ctx, cx + 50, charY - 80, P * 3, P * 10, '#ffff00');
-    if (effect === 'snow') for (let i = 0; i < 20; i++) px(ctx, (i * 23) % W, (animFrame * 2 + i * 17) % H, '#fff');
+    // ═══════════════════════════════════════════════════════════════
+    // ✨ EFFETTI - TUTTI
+    // ═══════════════════════════════════════════════════════════════
+    if (effect === 'sparkle') {
+      for (let i = 0; i < 20; i++) {
+        const x = (animFrame * 5 + i * 47) % W;
+        const y = (i * 31 + animFrame * 2) % H;
+        const size = (i % 3) + 1;
+        ctx.globalAlpha = 0.5 + Math.sin(animFrame * 0.3 + i) * 0.5;
+        pxRect(ctx, x, y, P * size, P * size, '#fff');
+        pxRect(ctx, x + P, y - P, P, P, '#ffff88');
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (effect === 'hearts') {
+      for (let i = 0; i < 10; i++) {
+        const x = (animFrame * 2 + i * 50) % W;
+        const y = H - (animFrame * 3 + i * 40) % (H + 50);
+        ctx.globalAlpha = 0.7;
+        // Cuore stilizzato
+        px(ctx, x, y, '#ff4488');
+        px(ctx, x + P * 2, y, '#ff4488');
+        pxRect(ctx, x - P, y + P, P * 4, P, '#ff4488');
+        pxRect(ctx, x, y + P * 2, P * 2, P, '#ff4488');
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (effect === 'fire') {
+      for (let i = 0; i < 20; i++) {
+        const x = cx - 60 + (i * 17) % 120;
+        const baseY = H - 15;
+        const h = 20 + Math.sin(animFrame * 0.5 + i) * 30;
+        const colors = ['#ff0000', '#ff4400', '#ff8800', '#ffaa00', '#ffcc00'];
+        for (let j = 0; j < 5; j++) {
+          const flameY = baseY - j * P * 3 - (animFrame * 2 + i * 5) % 30;
+          if (flameY > H - 80) {
+            ctx.globalAlpha = 1 - j * 0.2;
+            pxRect(ctx, x, flameY, P * 3, P * 4, colors[j]);
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (effect === 'money_rain') {
+      for (let i = 0; i < 15; i++) {
+        const x = (i * 37) % W;
+        const y = (animFrame * 5 + i * 30) % (H + 20) - 20;
+        ctx.globalAlpha = 0.8;
+        pxRect(ctx, x, y, P * 4, P * 2, '#44aa44');
+        pxRect(ctx, x + P, y, P * 2, P, '#66cc66');
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (effect === 'tears') {
+      // Lacrime che scendono
+      const tearY = (animFrame * 4) % 50;
+      ctx.globalAlpha = 0.8;
+      pxRect(ctx, cx - 30, charY + tearY, P * 2, P * 4, '#66ccff');
+      pxRect(ctx, cx + 25, charY + tearY + 10, P * 2, P * 4, '#66ccff');
+      pxRect(ctx, cx - 28, charY + tearY + 25, P * 2, P * 3, '#66ccff');
+      ctx.globalAlpha = 1;
+    }
+    if (effect === 'rage') {
+      // Vene di rabbia
+      pxRect(ctx, cx - 45, charY - 45, P * 3, P, '#ff0000');
+      pxRect(ctx, cx - 43, charY - 43, P, P * 3, '#ff0000');
+      pxRect(ctx, cx + 38, charY - 45, P * 3, P, '#ff0000');
+      pxRect(ctx, cx + 42, charY - 43, P, P * 3, '#ff0000');
+      // Fumo dalla testa
+      if (animFrame % 10 < 5) {
+        ctx.globalAlpha = 0.5;
+        pxRect(ctx, cx - 20, charY - 70 - (animFrame % 10), P * 3, P * 3, '#ff4444');
+        pxRect(ctx, cx + 15, charY - 75 - (animFrame % 10), P * 3, P * 3, '#ff4444');
+        ctx.globalAlpha = 1;
+      }
+    }
+    if (effect === 'sleep') {
+      // ZZZ
+      const zOffset = animFrame % 30;
+      ctx.globalAlpha = 0.8;
+      pxRect(ctx, cx + 50, charY - 30 - zOffset * 0.5, P * 4, P, '#fff');
+      pxRect(ctx, cx + 52, charY - 28 - zOffset * 0.5, P * 4, P, '#fff');
+      pxRect(ctx, cx + 50, charY - 26 - zOffset * 0.5, P * 4, P, '#fff');
+      // Z più grande
+      pxRect(ctx, cx + 60, charY - 50 - zOffset * 0.3, P * 5, P * 2, '#fff');
+      pxRect(ctx, cx + 63, charY - 46 - zOffset * 0.3, P * 5, P * 2, '#fff');
+      pxRect(ctx, cx + 60, charY - 42 - zOffset * 0.3, P * 5, P * 2, '#fff');
+      ctx.globalAlpha = 1;
+    }
+    if (effect === 'music') {
+      // Note musicali
+      const noteOffset = animFrame % 40;
+      ctx.globalAlpha = 0.8;
+      // Nota 1
+      pxRect(ctx, cx + 50, charY - 40 - noteOffset, P * 2, P * 6, '#fff');
+      pxRect(ctx, cx + 46, charY - 40 - noteOffset, P * 4, P * 3, '#fff');
+      // Nota 2
+      pxRect(ctx, cx + 65, charY - 55 - noteOffset * 0.8, P * 2, P * 5, '#ffff00');
+      pxRect(ctx, cx + 62, charY - 55 - noteOffset * 0.8, P * 3, P * 2, '#ffff00');
+      ctx.globalAlpha = 1;
+    }
+    if (effect === 'lightning') {
+      if (animFrame % 15 < 4) {
+        ctx.shadowColor = '#ffff00';
+        ctx.shadowBlur = 20;
+        // Fulmine zigzag
+        pxRect(ctx, cx + 45, charY - 90, P * 4, P * 8, '#ffff00');
+        pxRect(ctx, cx + 50, charY - 82, P * 4, P * 8, '#ffff00');
+        pxRect(ctx, cx + 45, charY - 74, P * 4, P * 8, '#ffff00');
+        pxRect(ctx, cx + 50, charY - 66, P * 3, P * 10, '#ffff00');
+        ctx.shadowBlur = 0;
+      }
+    }
+    if (effect === 'snow') {
+      for (let i = 0; i < 25; i++) {
+        const x = (i * 23 + animFrame) % W;
+        const y = (animFrame * 2 + i * 17) % H;
+        ctx.globalAlpha = 0.7 + Math.sin(i) * 0.3;
+        const size = (i % 2) + 1;
+        pxRect(ctx, x, y, P * size, P * size, '#fff');
+      }
+      ctx.globalAlpha = 1;
+    }
 
   }, [bg, skinColor, hairStyle, hairColor, eyeStyle, mouthStyle, accessory, hat, item, effect, animFrame, animEnabled]);
 
