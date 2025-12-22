@@ -67,8 +67,8 @@ const App = () => {
     FEE_PERCENT: 2.5, // Percentuale fee sulle vendite (2.5%)
     MINT_PRICE: 0.05, // Costo per mintare un NFT in SOL
     // 🤖 BOT CONFIG
-    BOT_WALLET: "YOUR_BOT_WALLET_HERE", // Wallet del bot MM (stesso di FEE_WALLET)
-    TOKEN_ADDRESS: "YOUR_TOKEN_ADDRESS_HERE", // Indirizzo del tuo token
+    BOT_WALLET: "BTMD9UZpH4aSknHf1SiSaThbGz8gGSjw5x3E4uXB1KLP", // Wallet del bot MM (stesso di FEE_WALLET)
+    TOKEN_ADDRESS: "DA5pLC9CymVWj5woo5egE1dVh9Rekh9vt7Zg1sAepump", // Indirizzo del tuo token
   };
   // ═══════════════════════════════════════════════════════════════
 
