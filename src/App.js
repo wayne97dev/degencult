@@ -523,8 +523,7 @@ const App = () => {
     { id: 'horns', name: '😈 Horns' }, { id: 'headphones', name: '🎧 Phones' },
     { id: 'wizard', name: '🧙 Wizard' }, { id: 'cowboy', name: '🤠 Cowboy' },
     { id: 'beanie', name: '🎿 Beanie' }, { id: 'tophat', name: '🎩 Tophat' },
-    { id: 'party', name: '🎉 Party' }, { id: 'cat_ears', name: '🐱 Cat' },
-    { id: 'bunny_ears', name: '🐰 Bunny' }, { id: 'antenna', name: '👽 Alien' },
+    { id: 'party', name: '🎉 Party' }, { id: 'antenna', name: '👽 Alien' },
   ];
 
   const items = [
