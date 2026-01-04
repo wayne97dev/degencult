@@ -59,9 +59,9 @@ const App = () => {
   // ⚙️ CONFIGURAZIONE - MODIFICA QUI I TUOI LINK!
   // ═══════════════════════════════════════════════════════════════
   const CONFIG = {
-    TWITTER_URL: "https://x.com/YOUR_TWITTER_HERE",
+    TWITTER_URL: "https://x.com/i/communities/2007895913801331152",
     DEXSCREENER_URL: "https://dexscreener.com/solana/YOUR_TOKEN_HERE",
-    CONTRACT_ADDRESS: "YOUR_CONTRACT_ADDRESS_HERE",
+    CONTRACT_ADDRESS: "",
     // 💰 WALLET & FEES CONFIG
     FEE_WALLET: "YOUR_SOLANA_WALLET_HERE", // Il tuo wallet per ricevere fee e mint
     FEE_PERCENT: 2.5, // Percentuale fee sulle vendite (2.5%)
