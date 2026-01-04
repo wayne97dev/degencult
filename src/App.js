@@ -67,8 +67,8 @@ const App = () => {
     FEE_PERCENT: 2.5, // Percentuale fee sulle vendite (2.5%)
     MINT_PRICE: 0.05, // Costo per mintare un NFT in SOL
     // 🤖 BOT CONFIG
-    BOT_WALLET: "BTMD9UZpH4aSknHf1SiSaThbGz8gGSjw5x3E4uXB1KLP", // Wallet del bot MM (stesso di FEE_WALLET)
-    TOKEN_ADDRESS: "DA5pLC9CymVWj5woo5egE1dVh9Rekh9vt7Zg1sAepump", // Indirizzo del tuo token
+    BOT_WALLET: "YOUR_BOT_WALLET_HERE", // Wallet del bot MM (stesso di FEE_WALLET)
+    TOKEN_ADDRESS: "YOUR_TOKEN_ADDRESS_HERE", // Indirizzo del tuo token
   };
   // ═══════════════════════════════════════════════════════════════
 
@@ -285,7 +285,7 @@ const App = () => {
       const address = response.publicKey.toString();
       setWalletAddress(address);
       playSound('mint');
-      localStorage.setItem('degenCultWallet', address);
+      localStorage.setItem('pfpWallet', address);
     } catch (err) {
       console.error('Wallet error:', err);
       if (err.code === 4001 || err.message?.includes('User rejected')) {
@@ -306,14 +306,14 @@ const App = () => {
       }
     } catch (err) {}
     setWalletAddress(null);
-    localStorage.removeItem('degenCultWallet');
+    localStorage.removeItem('pfpWallet');
     playSound('click');
   };
 
   useEffect(() => {
     const checkWallet = async () => {
       await new Promise(resolve => setTimeout(resolve, 500));
-      const savedWallet = localStorage.getItem('degenCultWallet');
+      const savedWallet = localStorage.getItem('pfpWallet');
       const provider = getPhantomProvider();
       
       if (provider && savedWallet) {
@@ -321,7 +321,7 @@ const App = () => {
           const response = await provider.connect({ onlyIfTrusted: true });
           setWalletAddress(response.publicKey.toString());
         } catch (err) {
-          localStorage.removeItem('degenCultWallet');
+          localStorage.removeItem('pfpWallet');
         }
       }
     };
@@ -1394,7 +1394,7 @@ const App = () => {
     playSound('special');
     const link = document.createElement('a');
     link.href = canvasRef.current.toDataURL('image/png');
-    link.download = `degen-cult-${Date.now()}.png`;
+    link.download = `pfp-${Date.now()}.png`;
     link.click();
   };
 
@@ -1516,7 +1516,7 @@ const App = () => {
 
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-          <h1 className="title" style={{ fontSize: '20px', margin: '0' }}>👾 DEGEN CULT 👾</h1>
+          <h1 className="title" style={{ fontSize: '20px', margin: '0' }}>🖼️ PICTURES FOR PUMP 🖼️</h1>
           <p style={{ fontFamily: "'Press Start 2P'", fontSize: '7px', opacity: 0.5, marginTop: '8px' }}>PIXEL PFP MAKER ON SOLANA</p>
         </div>
 
