@@ -63,7 +63,7 @@ const App = () => {
     DEXSCREENER_URL: "https://dexscreener.com/solana/YOUR_TOKEN_HERE",
     CONTRACT_ADDRESS: "",
     // 💰 WALLET & FEES CONFIG
-    FEE_WALLET: "YOUR_SOLANA_WALLET_HERE", // Il tuo wallet per ricevere fee e mint
+    FEE_WALLET: "7zPcJLsNPMPa7Pay9pzj7RFdJ1tyLNFBoP6cN15bTjzg", // Il tuo wallet per ricevere fee e mint
     FEE_PERCENT: 2.5, // Percentuale fee sulle vendite (2.5%)
     MINT_PRICE: 0.05, // Costo per mintare un NFT in SOL
     // 🤖 BOT CONFIG
