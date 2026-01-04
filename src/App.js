@@ -61,14 +61,14 @@ const App = () => {
   const CONFIG = {
     TWITTER_URL: "https://x.com/i/communities/2007895913801331152",
     DEXSCREENER_URL: "https://dexscreener.com/solana/YOUR_TOKEN_HERE",
-    CONTRACT_ADDRESS: "",
+    CONTRACT_ADDRESS: "FBNEcB3EZsB1eFdvz81JkyxHBFJ3rGQLvZ1j5fEApump",
     // 💰 WALLET & FEES CONFIG
     FEE_WALLET: "7zPcJLsNPMPa7Pay9pzj7RFdJ1tyLNFBoP6cN15bTjzg", // Il tuo wallet per ricevere fee e mint
     FEE_PERCENT: 2.5, // Percentuale fee sulle vendite (2.5%)
     MINT_PRICE: 0.05, // Costo per mintare un NFT in SOL
     // 🤖 BOT CONFIG
     BOT_WALLET: "YOUR_BOT_WALLET_HERE", // Wallet del bot MM (stesso di FEE_WALLET)
-    TOKEN_ADDRESS: "YOUR_TOKEN_ADDRESS_HERE", // Indirizzo del tuo token
+    TOKEN_ADDRESS: "FBNEcB3EZsB1eFdvz81JkyxHBFJ3rGQLvZ1j5fEApump", // Indirizzo del tuo token
   };
   // ═══════════════════════════════════════════════════════════════
 
