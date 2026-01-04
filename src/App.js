@@ -60,7 +60,7 @@ const App = () => {
   // ═══════════════════════════════════════════════════════════════
   const CONFIG = {
     TWITTER_URL: "https://x.com/i/communities/2007895913801331152",
-    DEXSCREENER_URL: "https://dexscreener.com/solana/YOUR_TOKEN_HERE",
+    DEXSCREENER_URL: "https://dexscreener.com/solana/3b9g3fbfaohcxjbxyjrdyhwxzsh9jkp8s9mu9vcky9l1",
     CONTRACT_ADDRESS: "FBNEcB3EZsB1eFdvz81JkyxHBFJ3rGQLvZ1j5fEApump",
     // 💰 WALLET & FEES CONFIG
     FEE_WALLET: "7zPcJLsNPMPa7Pay9pzj7RFdJ1tyLNFBoP6cN15bTjzg", // Il tuo wallet per ricevere fee e mint
